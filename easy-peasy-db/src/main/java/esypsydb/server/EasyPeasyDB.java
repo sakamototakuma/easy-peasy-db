@@ -1,10 +1,10 @@
-package esypsydb;
+package esypsydb.server;
 
 /**
  * Hello world!
  *
  */
-public class App 
+public class EasyPeasyDB 
 {
     public static void main( String[] args )
     {
