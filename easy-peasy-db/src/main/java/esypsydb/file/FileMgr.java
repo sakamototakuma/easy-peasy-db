@@ -3,14 +3,13 @@ package esypsydb.file;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
 // 
 public class FileMgr {
     private File dbDirectory; //　保存先ディレクトリ
-    private int blocksize;
+    private int blocksize;    //  ブロックサイズ
     private boolean isNew;
     private Map<String, RandomAccessFile> openFiles = new HashMap<>();
 
@@ -51,7 +50,10 @@ public class FileMgr {
         }
     }
 
-    // ファイルの拡張：blocksizeの空配列をファイル末尾に付け足す
+    /**
+     * ファイルの拡張：blocksizeの空配列をファイル末尾に付け足す
+     * @return BlockId
+    */
     public synchronized BlockId append(String filename) {
         int newblknum = length(filename);
         BlockId blk = new BlockId(filename, newblknum);
@@ -81,7 +83,7 @@ public class FileMgr {
         return isNew;
     }
 
-    public int blocksize() {
+    public int blockSize() {
         return blocksize;
     }
 
