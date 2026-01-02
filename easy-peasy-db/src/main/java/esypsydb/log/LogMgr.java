@@ -3,7 +3,6 @@ package esypsydb.log;
 import esypsydb.file.FileMgr;
 import esypsydb.file.Page;
 
-import esypsydb.log.LogIterator;
 import java.util.Iterator;
 
 import esypsydb.file.BlockId;
@@ -18,11 +17,11 @@ public class LogMgr {
     private int lastSavedLSN = 0;  // ディスクに最後に書き込まれたLSN
 
     // ログファイルを開き、現在書き込み可能な最後の場所を特定する
-    private LogMgr(FileMgr fm, String logfile) {
+    public LogMgr(FileMgr fm, String logfile) {
         this.fm = fm;
         this.logfile = logfile;
         byte[] b = new byte[fm.blockSize()];  // メモリ上にブロックサイズの配列生成
-        Page logpage = new Page(b);           // 配列bの内容のPageオブジェクトで包む
+        this.logpage = new Page(b);           // 配列bの内容のPageオブジェクトで包む
         int logsize = fm.length(logfile);     // ログファイルに何ブロック保存されえてるか
         //　ログファイルのサイズが空なら、新しい空のページをブロック末尾に追加
         if (logsize == 0)
@@ -36,9 +35,9 @@ public class LogMgr {
     }
 
     /**
-    * ディスクへの書き込み
+    * WALに従ったディスクへの書き込み
     * 指定されたLSNとディス上のLSNを比較
-    * より前のすべてのログレコードもディスクに書き込まれる。
+    * より前のすべてのログレコードもディスクに書き込まれる
     * @param lsn ログレコードのLSN
     */
     public void flush(int lsn) {
