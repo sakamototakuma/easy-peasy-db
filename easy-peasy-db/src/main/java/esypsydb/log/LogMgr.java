@@ -37,11 +37,11 @@ public class LogMgr {
     /**
     * WALに従ったディスクへの書き込み
     * 指定されたLSNとディス上のLSNを比較
-    * より前のすべてのログレコードもディスクに書き込まれる
+    * LSN 1〜lsn も（連続で）ディスクに載っていることを保証
     * @param lsn ログレコードのLSN
     */
     public void flush(int lsn) {
-        if (lsn >= lastSavedLSN) 
+        if (lsn >= lastSavedLSN) // 等号はなくてもok
             flush();
     }
 
