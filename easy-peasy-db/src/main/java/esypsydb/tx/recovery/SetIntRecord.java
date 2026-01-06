@@ -45,7 +45,7 @@ public class SetIntRecord implements LogRecord {
         tx.unpin(blk);
     }
 
-    public int writeToLog(LogMgr lm, int txnum, BlockId blk, int offset, int val) {
+    public static int writeToLog(LogMgr lm, int txnum, BlockId blk, int offset, int val) {
         int tpos = Integer.BYTES;
         int fpos = tpos + Integer.BYTES;
         int bpos = fpos + Page.maxLength(blk.fileName().length());

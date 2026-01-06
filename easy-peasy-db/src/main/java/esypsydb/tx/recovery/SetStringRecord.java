@@ -2,10 +2,11 @@ package esypsydb.tx.recovery;
 
 import esypsydb.file.*;
 import esypsydb.log.LogMgr;
-import esypsydb.tx.Transaction;;
+import esypsydb.tx.Transaction;
 
 public class SetStringRecord implements LogRecord {
-    private int txnum, offset, val; // val: 古い値
+    private int txnum, offset;
+    private String val; // val: 古い値
     private BlockId blk;
 
     /**
