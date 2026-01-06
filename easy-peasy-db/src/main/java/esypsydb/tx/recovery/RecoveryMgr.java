@@ -6,6 +6,5 @@ public class RecoveryMgr {
 
     public RecoveryMgr(int txnum) {
         this.txnum = txnum;
-        new StartRecord(txnum).writeLog();
     }
 }

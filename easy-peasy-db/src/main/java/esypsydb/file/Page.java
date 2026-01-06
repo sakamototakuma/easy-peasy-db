@@ -49,7 +49,7 @@ public class Page {
     }
 
     // 文字列の読み書き
-    public String geString(int offset) {
+    public String getString(int offset) {
         byte[] b = getBytes(offset);
         // 受け取った配列bを文字セットで文字列で復元
         return new String(b, CHARASET);
