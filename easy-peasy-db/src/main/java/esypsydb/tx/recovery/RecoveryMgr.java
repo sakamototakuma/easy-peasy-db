@@ -74,6 +74,13 @@ public class RecoveryMgr {
         return SetIntRecord.writeToLog(lm, txnum, blk, offset, oldval);
     }
 
+    /**
+     * 
+     * @param buff
+     * @param offset
+     * @param newval
+     * @return
+     */
     public int setString(Buffer buff, int offset, String newval) {
         String oldval = buff.contents().getString(offset);
         BlockId blk = buff.block();
