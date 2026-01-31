@@ -9,7 +9,7 @@ public class Buffer {
     private Page contents;       // ディスクから読み込んだ内容を保持するメモリ領域
     private BlockId blk = null;
     private int pins = 0;        // ピンの数（トランザクション数）
-    private int txnum = -1;      // トランザクション番号　（-1なら未変更）
+    private int txnum = -1;      // トランザクション番号　（0以上:=Tx番号(dirty), -1:＝Clean）
     private int lsn = -1;        // バッファに対するLSN
 
     public Buffer(FileMgr fm, LogMgr lm) {
