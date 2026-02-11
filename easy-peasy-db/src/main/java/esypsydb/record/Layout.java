@@ -35,6 +35,10 @@ public class Layout {
         return slotsize;
     }
 
+    public int offset(String fldname) {
+        return offsets.get(fldname);
+    }
+
     private int lengthInBytes(String fldname) {
         int fldtype = schema.type(fldname);
         if (fldtype == INTEGER)
