@@ -31,7 +31,7 @@ public class Layout {
         return schema;
     }
 
-    public int slotsize() {
+    public int slotSize() {
         return slotsize;
     }
 

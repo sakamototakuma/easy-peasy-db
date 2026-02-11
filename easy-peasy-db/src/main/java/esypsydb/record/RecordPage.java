@@ -65,12 +65,12 @@ public class RecordPage {
         }
     }
 
-    /** slot の後ろで USED フラグが立っている次のスロットを返す。無ければ -1。 */
+    /** slot の後ろで USED フラグが立っている次のスロットを返す。無ければ -1 */
     public int nextAfter(int slot) {
         return searchAfter(slot, USED);
     }
 
-    /** slot の後ろで EMPTY なスロットを見つけ USED にして返す。無ければ -1。 */
+    /** slot の後ろで EMPTY なスロットを見つけ USED にして返す。無ければ -1 */
     public int insertAfter(int slot) {
         int newslot = searchAfter(slot, EMPTY);
         if (newslot >= 0)
@@ -82,8 +82,7 @@ public class RecordPage {
         return blk;
     }
 
-    // ---- ヘルパ ----
-
+    // 指定したflagの各slotの先頭（offset(slot)のintを返す。無ければ -1
     private int searchAfter(int slot, int flag) {
         slot++;
         while (isValidSlot(slot)) {
@@ -94,15 +93,18 @@ public class RecordPage {
         return -1;
     }
 
+    // ページの境界（右端かどうか）チェック
     private boolean isValidSlot(int slot) {
-        return offset(slot) + layout.slotsize() <= tx.blockSize();
+        return offset(slot) + layout.slotSize() <= tx.blockSize();
     }
 
+    // フラグをセットする
     private void setFlag(int slot, int flag) {
         tx.setInt(blk, offset(slot), flag, true);
     }
 
+    // 固定長スロット
     private int offset(int slot) {
-        return slot * layout.slotsize();
+        return slot * layout.slotSize();
     }
 }
