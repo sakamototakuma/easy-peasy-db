@@ -84,6 +84,14 @@ public class TableScan {
             setString(fldname, (String)val.asJavaVal());
     }
 
+    /**
+     * 新しいレコードを挿入する「空きスロット」を確保し、currentslot をそこへ移動する
+     *
+     *   正しい手順:
+     *       ts.insert();          // ← 先に空きスロットを確保
+     *       ts.setString("col", value);
+     *       ts.setInt("col2", value2);
+     */
     public void insert() {
         currentslot = rp.insertAfter(currentslot);
         while (currentslot < 0) {
