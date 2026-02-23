@@ -4,8 +4,7 @@ import static java.sql.Types.INTEGER;
 
 import esypsydb.file.BlockId;
 import esypsydb.query.Constant;
-import esypsydb.query.IntConstant;
-import esypsydb.query.StringConstant;
+import esypsydb.query.Constant;
 import esypsydb.tx.Transaction;
 
 public class TableScan {
@@ -58,9 +57,9 @@ public class TableScan {
     // 値をConstant型として取り出す
     public Constant getVal(String fldname) {
         if (layout.schema().type(fldname) == INTEGER)
-            return new IntConstant(getInt(fldname));
+            return new Constant(getInt(fldname));
         else
-            return new StringConstant(getString(fldname));
+            return new Constant(getString(fldname));
     }
 
     // その列名がテーブルに存在するか
@@ -79,16 +78,16 @@ public class TableScan {
     // 整数/文字列フィールドの値を書き込む
     public void setVal(String fldname, Constant val) {
         if (layout.schema().type(fldname) == INTEGER)
-            setInt(fldname, (Integer)val.asJavaVal());
+            setInt(fldname, (Integer)val.asInt());
         else
-            setString(fldname, (String)val.asJavaVal());
+            setString(fldname, (String)val.asString());
     }
 
     /**
      * 新しいレコードを挿入する「空きスロット」を確保し、currentslot をそこへ移動する
      *
      *   正しい手順:
-     *       ts.insert();          // ← 先に空きスロットを確保
+     *       ts.insert();          ← 先に空きスロットを確保
      *       ts.setString("col", value);
      *       ts.setInt("col2", value2);
      */
