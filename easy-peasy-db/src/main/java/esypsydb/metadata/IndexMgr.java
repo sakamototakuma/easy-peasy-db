@@ -7,8 +7,8 @@ import esypsydb.tx.Transaction;
 
 public class IndexMgr {
     private Layout layout;
-    private TableMgr tableMgr;
-    private StatMgr statMgr;
+    private TableMgr tblmgr;
+    private StatMgr statmgr;
 
     public IndexMgr(boolean isnew, TableMgr tblmgr, StatMgr statmgr, Transaction tx) {
         if (isnew) {

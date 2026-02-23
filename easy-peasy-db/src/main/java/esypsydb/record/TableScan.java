@@ -13,7 +13,7 @@ public class TableScan {
     private RecordPage rp;
     private String filename;
     private int currentslot;
-    private TableScan(Transaction tx, String tblname, Layout layout) {
+    public TableScan(Transaction tx, String tblname, Layout layout) {
         this.tx = tx;
         this.layout = layout;
         filename = tblname + ".tbl";

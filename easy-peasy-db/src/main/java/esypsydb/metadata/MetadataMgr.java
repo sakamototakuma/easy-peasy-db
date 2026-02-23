@@ -41,7 +41,7 @@ public class MetadataMgr {
         return idxmgr.getIndexInfo(tblname, tx);
     }
 
-    public StatInfo geStatInfo(String tblname, Layout layout, Transaction tx) {
+    public StatInfo getStatInfo(String tblname, Layout layout, Transaction tx) {
         return statmgr.getStatInfo(tblname, layout, tx);
     }
 }
