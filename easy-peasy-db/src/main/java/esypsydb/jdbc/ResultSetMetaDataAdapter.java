@@ -3,7 +3,7 @@ package esypsydb.jdbc;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-public abstract class ResultSetMetadata implements ResultSetMetaData {
+public abstract class ResultSetMetaDataAdapter implements ResultSetMetaData {
     public String getCatalogName(int column) throws SQLException {
       throw new SQLException("operation not implemented");
    }

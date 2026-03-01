@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
 
-public abstract class ConnectAdapter implements Connection {
+public abstract class ConnectionAdapter implements Connection {
     public void clearWarnings() throws SQLException {
       throw new SQLException("operation not implemented");
    }
