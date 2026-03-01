@@ -3,7 +3,6 @@ package esypsydb.record;
 import static java.sql.Types.*;
 
 import esypsydb.file.Page;
-import esypsydb.record.Schema;
 import java.util.*;
 
 public class Layout {

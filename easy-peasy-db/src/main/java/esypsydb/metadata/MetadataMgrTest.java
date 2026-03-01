@@ -8,7 +8,6 @@ import esypsydb.record.Layout;
 import esypsydb.record.TableScan;
 import esypsydb.server.EasyPeasyDB;
 import esypsydb.tx.Transaction;
-import esypsydb.metadata.*;
 import esypsydb.record.Schema;;
 
 public class MetadataMgrTest {

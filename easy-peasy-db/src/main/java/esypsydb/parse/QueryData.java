@@ -3,7 +3,6 @@ package esypsydb.parse;
 import java.util.*;
 
 import esypsydb.query.Predicate;
-import esypsydb.record.*;
 
 public class QueryData {
     private List<String> fields;

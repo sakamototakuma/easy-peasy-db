@@ -4,7 +4,6 @@ import static java.sql.Types.INTEGER;
 
 import esypsydb.file.BlockId;
 import esypsydb.query.Constant;
-import esypsydb.query.Constant;
 import esypsydb.tx.Transaction;
 
 public class TableScan {

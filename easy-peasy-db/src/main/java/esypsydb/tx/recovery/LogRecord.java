@@ -1,8 +1,6 @@
 package esypsydb.tx.recovery;
 
-import esypsydb.log.LogMgr;
 import esypsydb.file.*;
-import esypsydb.server.EasyPeasyDB;
 import esypsydb.tx.Transaction;
 
 public interface LogRecord {
@@ -41,5 +39,4 @@ public interface LogRecord {
                 return null;
         }
     }
-    
 }
