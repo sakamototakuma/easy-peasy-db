@@ -7,7 +7,7 @@ import esypsydb.query.UpdateScan;
 import esypsydb.tx.Transaction;
 import java.util.*;
 
-public class BasicUpdatePlanner {
+public class BasicUpdatePlanner implements UpdatePlanner {
     private MetadataMgr mdm;
    
    public BasicUpdatePlanner(MetadataMgr mdm) {

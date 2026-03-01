@@ -49,7 +49,6 @@ public class Parser {
     }
 
     // クエリをパースするためのメソッド
-
     public QueryData query() {
         lex.eatKeyword("select");
         List<String> fields = selectList();

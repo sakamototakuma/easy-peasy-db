@@ -7,10 +7,10 @@ import esypsydb.parse.Parser;
 import esypsydb.parse.QueryData;
 import esypsydb.tx.Transaction;
 
-public class BetterQueryPlanner implements QueryPlanner {
+public class BasicQueryPlanner implements QueryPlanner {
     private MetadataMgr mdm;
 
-    public BetterQueryPlanner(MetadataMgr mdm) {
+    public BasicQueryPlanner(MetadataMgr mdm) {
         this.mdm = mdm;
     }
 
