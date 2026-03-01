@@ -2,6 +2,7 @@ package esypsydb.query;
 
 import java.util.*;
 import esypsydb.record.Schema;
+import esypsydb.plan.Plan;
 
 // 複数TermをANDで繋げた全体条件
 public class Predicate {

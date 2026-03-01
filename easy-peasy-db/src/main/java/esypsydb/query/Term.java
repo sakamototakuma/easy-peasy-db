@@ -1,6 +1,7 @@
 package esypsydb.query;
 
-import esypsydb.record.Schema;;
+import esypsydb.record.Schema;
+import esypsydb.plan.Plan;
 
 // 項（Term）は2つの式の比較
 public class Term {
