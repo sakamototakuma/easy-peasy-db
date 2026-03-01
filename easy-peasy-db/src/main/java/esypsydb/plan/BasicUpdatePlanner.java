@@ -53,7 +53,9 @@ public class BasicUpdatePlanner implements UpdatePlanner {
       us.close();
       return 1;
    }
-   
+
+   // CREATION系はplanを作る必要はない！
+
    public int executeCreateTable(CreateTableData data, Transaction tx) {
       mdm.createTable(data.tableName(), data.newSchema(), tx);
       return 0;
