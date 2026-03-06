@@ -12,7 +12,7 @@ public class Planner {
         this.uplanner = uplanner;
     }
 
-    public Plan creaateQueryPlan(String cmd, Transaction tx) {
+    public Plan createQueryPlan(String cmd, Transaction tx) {
         Parser parser = new Parser(cmd);
         QueryData data = parser.query();  // クエリをパース
         // クエリ検証のコードをここに
