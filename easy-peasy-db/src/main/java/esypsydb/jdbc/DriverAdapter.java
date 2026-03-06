@@ -25,11 +25,11 @@ public abstract class DriverAdapter implements Driver {
         return null;
     }
 
-    public boolean jdbcCompilant() {
+    public boolean jdbcCompliant() {
         return false;
     }
 
-    public Logger getPaLogger() throws SQLFeatureNotSupportedException {
+    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         throw new SQLFeatureNotSupportedException("operation not implemented");
     }
 }
