@@ -1,6 +1,5 @@
 package esypsydb.jdbc.network;
 
-import java.rmi.*;
 import java.sql.SQLException;
 import java.sql.Statement;
 
