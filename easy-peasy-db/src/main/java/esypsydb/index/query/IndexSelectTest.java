@@ -3,6 +3,7 @@ package esypsydb.index.query;
 import java.util.Map;
 
 import esypsydb.index.Index;
+import esypsydb.index.planner.IndexSelectPlan;
 import esypsydb.metadata.IndexInfo;
 import esypsydb.metadata.MetadataMgr;
 import esypsydb.plan.Plan;

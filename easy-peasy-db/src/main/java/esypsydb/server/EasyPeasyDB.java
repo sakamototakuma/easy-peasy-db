@@ -47,6 +47,10 @@ public class EasyPeasyDB {
         return planner;
     }
 
+    public MetadataMgr mdMgr() {
+        return mdm;
+    }
+
     public FileMgr fileMgr() {
         return fm;
     }
