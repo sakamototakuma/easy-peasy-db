@@ -3,12 +3,11 @@ package esypsydb.index.query;
 import java.util.Map;
 
 import esypsydb.index.Index;
+import esypsydb.index.planner.IndexJoinPlan;
 import esypsydb.metadata.IndexInfo;
 import esypsydb.metadata.MetadataMgr;
-import esypsydb.plan.Plan;
-import esypsydb.plan.TablePlan;
-import esypsydb.query.Constant;
-import esypsydb.query.Scan;
+import esypsydb.plan.*;
+import esypsydb.query.*;
 import esypsydb.record.RID;
 import esypsydb.record.TableScan;
 import esypsydb.server.EasyPeasyDB;
