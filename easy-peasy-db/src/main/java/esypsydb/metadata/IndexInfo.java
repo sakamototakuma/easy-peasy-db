@@ -6,7 +6,6 @@ import java.util.*;
 import esypsydb.index.Index;
 import esypsydb.index.hash.HashIndex;
 import esypsydb.record.*;
-import static esypsydb.metadata.TableMgr.MAX_NAME;
 import esypsydb.tx.Transaction;
 
 /**
