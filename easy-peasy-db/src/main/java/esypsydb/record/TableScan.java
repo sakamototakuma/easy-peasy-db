@@ -4,9 +4,10 @@ import static java.sql.Types.INTEGER;
 
 import esypsydb.file.BlockId;
 import esypsydb.query.Constant;
+import esypsydb.query.UpdateScan;
 import esypsydb.tx.Transaction;
 
-public class TableScan {
+public class TableScan implements UpdateScan {
     private Transaction tx;
     private Layout layout;
     private RecordPage rp;
