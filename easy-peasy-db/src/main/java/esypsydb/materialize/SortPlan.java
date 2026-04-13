@@ -45,6 +45,10 @@ public class SortPlan implements Plan {
         return sch;
     }
 
+    public int distinctValues(String fieldname) {
+        return p.distinctValues(fieldname);
+    }
+
     /**
      * tempsはrun list
      * 入力を先頭レコードに移す。次のレコードがないなら空のrun listを返す
