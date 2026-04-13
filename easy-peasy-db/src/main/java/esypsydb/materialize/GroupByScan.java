@@ -3,7 +3,6 @@ package esypsydb.materialize;
 import java.util.*;
 
 import esypsydb.query.*;
-import esypsydb.record.*;
 
 public class GroupByScan implements Scan {
     private Scan s;
