@@ -21,12 +21,14 @@ public class Schema {
         addField(fldname, VARCHAR, length);
     }
 
+    // フィールドの単一追加
     public void add(String fldname, Schema sch) {
         int type = sch.type(fldname);
         int length = sch.length(fldname);
         addField(fldname, type, length);
     }
 
+    // スキーマ全てを追加
     public void addAll(Schema sch) {
         for (String fldname : sch.fields())
             add(fldname, sch);
