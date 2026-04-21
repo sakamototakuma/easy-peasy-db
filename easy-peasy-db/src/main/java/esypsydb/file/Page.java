@@ -5,8 +5,16 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class Page {
+    private static final int BLOCK_SIZE = 400;
+    public static final int INT_SIZE = Integer.SIZE / Byte.SIZE;
+    public static final Charset CHARSET = StandardCharsets.US_ASCII;
+    public static final int STR_SIZE(int n) {
+      float bytesPerChar = Charset.defaultCharset().newEncoder().maxBytesPerChar();
+      return INT_SIZE + (n * (int)bytesPerChar);
+   }
+
     private ByteBuffer bb;
-    public static final Charset CHARASET = StandardCharsets.US_ASCII;
+
 
     // ダイレクトバッファ作成用コンストラクタ
     public Page(int blocksize) {
@@ -52,19 +60,19 @@ public class Page {
     public String getString(int offset) {
         byte[] b = getBytes(offset);
         // 受け取った配列bを文字セットで文字列で復元
-        return new String(b, CHARASET);
+        return new String(b, CHARSET);
     }
 
     public void setString(int offset, String s) {
         // 文字列=>バイト列
-        byte[] b = s.getBytes(CHARASET);
+        byte[] b = s.getBytes(CHARSET);
         setBytes(offset, b);
     }
 
     // 最大で何バイトの領域を確保すべきかを計算し、領域の予約をする
     // strlenは保存したい文字数
     public static int maxLength(int strlen) {
-        float bytesPerChar = CHARASET.newEncoder().maxBytesPerChar();
+        float bytesPerChar = CHARSET.newEncoder().maxBytesPerChar();
         // Integer.BYTES は “長さ(int)” の4バイト分
         return Integer.BYTES + (strlen * (int)bytesPerChar);
     }
