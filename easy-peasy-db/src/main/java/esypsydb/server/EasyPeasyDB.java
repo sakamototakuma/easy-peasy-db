@@ -13,10 +13,10 @@ public class EasyPeasyDB {
     public static int BUFFER_SIZE = 8;
     public static String LOG_FILE = "easypeasydb.log";
 
-    private FileMgr fm;
-    private LogMgr lm;
-    private BufferMgr bm;
-    private MetadataMgr mdm;
+    private static FileMgr     fm;
+    private static BufferMgr   bm;
+    private static LogMgr      lm;
+    private static MetadataMgr mdm;
     private Planner planner;
 
     public EasyPeasyDB(String dirname) {
@@ -47,19 +47,19 @@ public class EasyPeasyDB {
         return planner;
     }
 
-    public MetadataMgr mdMgr() {
+    public static MetadataMgr mdMgr() {
         return mdm;
     }
 
-    public FileMgr fileMgr() {
+    public static FileMgr fileMgr() {
         return fm;
     }
 
-    public LogMgr logMgr() {
+    public static LogMgr logMgr() {
         return lm;
     }
 
-    public BufferMgr bufferMgr() {
+    public static BufferMgr bufferMgr() {
         return bm;
     }
 
