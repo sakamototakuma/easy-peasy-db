@@ -9,66 +9,72 @@ import java.util.*;
 import static java.sql.Types.INTEGER;
 
 public class ChunkScan implements Scan {
-    private List<RecordPage> pages;
-    private int startbnum, endbnum, current;
-    private Schema sch;
+    private List<RecordPage> buffs = new ArrayList<>();
+    private Transaction tx;
+    private String filename;
+    private Layout layout;
+    private int startbnum, endbnum, currentbnum;
     private RecordPage rp;
+    private int currentslot;
 
-    public ChunkScan(TableInfo ti, int startbnum, int endbnum, Transaction tx) {
-        pages = new ArrayList<RecordPage>();
+    public ChunkScan(Transaction tx, String filename,
+                     Layout layout, int startbnum, int endbnum) {
+        this.tx = tx;
+        this.filename = filename;
+        this.layout = layout;
         this.startbnum = startbnum;
-        this.endbnum   = endbnum;
-        this.sch = ti.schema();
-        String filename = ti.fieldName();
-        for (int i=startbnum; i<=endbnum; i++) {
-            BlokId blk = new BlockId(filename, i);
-            pages.add(new RecordPage(tx, blk, ti));
+        this.endbnum = endbnum;
+        for (int i = startbnum; i <= endbnum; i++) {
+            BlockId blk = new BlockId(filename, i);
+            buffs.add(new RecordPage(tx, blk, layout));
         }
-        beforeFirst();
+        moveToBlock(startbnum);
     }
 
+    public void close() {
+        for (int i = 0; i < buffs.size(); i++) {
+            BlockId blk = new BlockId(filename, startbnum + i);
+            tx.unpin(blk);
+        }
+    }
 
     public void beforeFirst() {
         moveToBlock(startbnum);
     }
 
     public boolean next() {
-        while (true) {
-            if (rp.next())
-                return true;
-            if (current == endbnum)
+        currentslot = rp.nextAfter(currentslot);
+        while (currentslot < 0) {
+            if (currentbnum == endbnum)
                 return false;
-            moveToBlock(current+1);
+            moveToBlock(rp.block().number() + 1);
+            currentslot = rp.nextAfter(currentslot);
         }
-    }
-
-    public void close() {
-        for (RecordPage rp : pages)
-            rp.close();
+        return true;
     }
 
     public Constant getVal(String fldname) {
-      if (sch.type(fldname) == INTEGER)
-         return new Constant(rp.getInt(fldname));
-      else
-         return new Constant(rp.getString(fldname));
-   }
-   
-   public int getInt(String fldname) {
-      return rp.getInt(fldname);
-   }
-   
-   public String getString(String fldname) {
-      return rp.getString(fldname);
-   }
-   
-   public boolean hasField(String fldname) {
-      return sch.hasField(fldname);
-   }
+        if (layout.schema().type(fldname) == INTEGER)
+            return new Constant(getInt(fldname));
+        else
+            return new Constant(getString(fldname));
+    }
 
-   private void moveToBlock(int blknum) {
-    current = blknum;
-    rp = pages.get(current - startbnum);
-    rp.moveToId(-1);
-   }
+    public int getInt(String fldname) {
+        return rp.getInt(currentslot, fldname);
+    }
+
+    public String getString(String fldname) {
+        return rp.getString(currentslot, fldname);
+    }
+
+    public boolean hasField(String fldname) {
+        return layout.schema().hasField(fldname);
+    }
+
+    private void moveToBlock(int blknum) {
+        currentbnum = blknum;
+        rp = buffs.get(currentbnum - startbnum);
+        currentslot = -1;
+    }
 }
