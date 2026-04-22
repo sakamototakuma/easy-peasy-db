@@ -18,7 +18,7 @@ public class MultiBufferProductScan implements Scan {
         this.layout = layout;
         this.tx = tx;
       filesize = tx.size(filename);
-        chunksize = BufferNeeds.bestFactor(filesize);
+        chunksize = BufferNeeds.bestFactor(tx.availableBuffs(), filesize);
         beforeFirst();
    }
 

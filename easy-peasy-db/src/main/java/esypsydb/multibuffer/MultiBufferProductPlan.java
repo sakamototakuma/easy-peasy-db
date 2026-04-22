@@ -4,7 +4,6 @@ import esypsydb.plan.*;
 import esypsydb.query.Scan;
 import esypsydb.query.UpdateScan;
 import esypsydb.record.*;
-import esypsydb.server.EasyPeasyDB;
 import esypsydb.tx.Transaction;
 import esypsydb.materialize.*;
 
@@ -33,7 +32,7 @@ public class MultiBufferProductPlan implements Plan {
      * cost = B2 + (B1×B2/k)
      */
     public int blocksAccessed() {
-        int avali = EasyPeasyDB.bufferMgr().available();
+        int avali = tx.availableBuffs();
         int size = new MaterializePlan(tx, rhs).blocksAccessed();
         int numchunks = (int) Math.ceil((double) size / avali);
         return rhs.blocksAccessed() + (lhs.blocksAccessed() * numchunks);
