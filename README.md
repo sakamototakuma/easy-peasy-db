@@ -85,8 +85,39 @@ Storage Manager / Buffer / Log / File
 | `metadata` | テーブル・統計・インデックスメタデータ |
 | `index` | インデックス機能（B+Tree/Hash など） |
 | `materialize` | 一時テーブル等の中間結果管理 |
+| `multibuffer` | chunk分割、バッファを有効活用 |
+| `opt` | クエリ最適化、Heuristicによるjoin order・Index選択 |
 | `jdbc` | Embedded / Network 経由の JDBC インターフェース |
 | `server` | DB 初期化・起動エントリポイント |
+
+---
+
+## Storage Model
+
+EasyPeasyDB は専用のブロックデバイスやカスタムファイルシステムを使わず、**ホストOSのファイルシステム上のファイル**をそのままバッキングストアとして利用します。
+
+- DB ディレクトリ (接続URLで指定) 配下に、テーブル毎に1つのファイルが作成されます
+- 各ファイルは `BLOCK_SIZE` バイトの固定長ブロックの配列として扱われます ([FileMgr.java](easy-peasy-db/src/main/java/esypsydb/file/FileMgr.java))
+- `RandomAccessFile` を `"rws"` モードで開いているため、**書き込みは毎回 OS 経由でディスクに同期**されます (fsync相当)。耐久性優先で、スループットは控えめです
+- 一時テーブル (`temp*`) は起動時に削除され、永続化対象外です
+
+したがって I/O 性能は、動作しているマシンのディスク (SSD / HDD) 特性とファイルシステムに直接依存します。
+
+---
+
+## Configuration & Memory Footprint
+
+| Parameter | Default | 意味 |
+|---|---|---|
+| `BLOCK_SIZE` | `4096` | 1ブロックのバイト数 (4 KiB) OSのページサイズ・FSブロックサイズに揃えることでI/Oを効率化 |
+| `BUFFER_SIZE` | `1024` | バッファプールに常駐させるページ数 |
+| `LOG_FILE` | `easypeasydb.log` | WAL ログファイル名 |
+
+### Memory
+
+- バッファプール使用量 = `BLOCK_SIZE × BUFFER_SIZE` = **4 KiB × 1024 = 4 MiB**
+- ページは `ByteBuffer.allocateDirect()` で確保されるため、**JVM ヒープ外のダイレクトメモリ領域**に載ります ([Page.java](easy-peasy-db/src/main/java/esypsydb/file/Page.java))
+- 上記に加え、ログバッファ・トランザクション状態・メタデータ等で追加のJVMヒープを使用します
 
 ---
 
