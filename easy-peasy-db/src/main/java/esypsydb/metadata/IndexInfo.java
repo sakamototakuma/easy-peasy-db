@@ -2,7 +2,6 @@ package esypsydb.metadata;
 
 import static java.sql.Types.INTEGER;
 
-import java.util.*;
 import esypsydb.index.Index;
 import esypsydb.index.hash.HashIndex;
 import esypsydb.record.*;

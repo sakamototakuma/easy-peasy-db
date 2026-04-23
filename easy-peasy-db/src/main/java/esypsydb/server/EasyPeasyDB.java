@@ -9,8 +9,8 @@ import esypsydb.metadata.MetadataMgr;
 import esypsydb.plan.*;
 
 public class EasyPeasyDB {
-    public static int BLOCK_SIZE = 400;
-    public static int BUFFER_SIZE = 8;
+    public static int BLOCK_SIZE = 4096;
+    public static int BUFFER_SIZE = 1024;
     public static String LOG_FILE = "easypeasydb.log";
 
     private FileMgr     fm;

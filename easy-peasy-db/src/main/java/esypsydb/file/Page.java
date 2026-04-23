@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class Page {
-    private static final int BLOCK_SIZE = 400;
     public static final int INT_SIZE = Integer.SIZE / Byte.SIZE;
     public static final Charset CHARSET = StandardCharsets.US_ASCII;
     public static final int STR_SIZE(int n) {
