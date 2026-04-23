@@ -86,6 +86,12 @@ public class Predicate {
       return null;
    }
 
+   /**
+    * 指定した列 fldname と等しい別の列名が、条件式の中にあるか探す
+    * 
+    * @param fldname
+    * @return
+    */
    public String equatesWithField(String fldname) {
       for (Term t : terms) {
          String s = t.equatesWithField(fldname);
