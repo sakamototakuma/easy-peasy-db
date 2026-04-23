@@ -185,6 +185,15 @@ public class Parser {
     }
 
     private Schema fieldDefs() {
+        Schema sch = fieldDef();
+        if (lex.matchDelim(',')) {
+            lex.eatDelim(',');
+            sch.addAll(fieldDefs());
+        }
+        return sch;
+    }
+
+    private Schema fieldDef() {
         String fldname = field();
         return fieldType(fldname);
     }
