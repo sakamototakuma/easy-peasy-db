@@ -1,2 +1,10 @@
 /.github
 /.vscode
+/.idea/
+*.iml
+
+# OS files
+.DS_Store
+
+# Build output
+/easy-peasy-db/target/

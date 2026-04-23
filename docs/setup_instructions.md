@@ -35,7 +35,7 @@ mvn clean package
 
 ## III. Running the Server
 
-### 起動スクリプト経由 (推奨)
+### 起動スクリプト経由
 
 リポジトリのルートから：
 
