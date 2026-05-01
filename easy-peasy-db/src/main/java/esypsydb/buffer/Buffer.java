@@ -59,7 +59,7 @@ public class Buffer {
     void flush() {
         if (txnum >= 0) {
             lm.flush(lsn);      // lsn最新までを書き込み
-            fm.read(blk, contents);
+            fm.write(blk, contents);
             txnum = -1;
         }
     }
