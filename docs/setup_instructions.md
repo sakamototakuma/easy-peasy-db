@@ -26,8 +26,10 @@ brew install maven
 
 ```bash
 cd easy-peasy-db
-mvn clean package
+mvn clean package -DskipTests
 ```
+
+テストをスキップしない場合は `-DskipTests` を外してください。
 
 成功すると `easy-peasy-db/target/easy-peasy-db-1.0-SNAPSHOT.jar` (実行可能 fat jar) が生成されます。
 
@@ -142,12 +144,19 @@ where sid = studentid and sectionid = sectid and courseid = cid
 
 ## V. Running Client Programs
 
-> **Status: WIP** — JDBC / RMI クライアント層は未実装です。現時点で動作するのは Embedded クライアント (IV の CreateStudentDB など) のみ。
+### Embedded モード (サーバ不要)
 
-### 目標とする利用フロー (予定)
+`EmbeddedDriver` を使えばサーバを立てずに直接 DB ファイルへアクセスできます。`CreateStudentDB` はその典型例です (セクション IV 参照)。
+
+### Network モード (RMI 経由)
+
+サーバを起動した状態で `NetworkDriver` を使って接続します。
 
 ```java
-Driver d = new EasyPeasyDriver();
+import java.sql.*;
+import esypsydb.jdbc.network.NetworkDriver;
+
+Driver d = new NetworkDriver();
 String url = "jdbc:easypeasydb://localhost";
 Connection conn = d.connect(url, null);
 Statement stmt = conn.createStatement();
@@ -155,11 +164,22 @@ ResultSet rs = stmt.executeQuery("select sname from student");
 while (rs.next()) {
     System.out.println(rs.getString("sname"));
 }
+rs.close();
+conn.close();
 ```
 
-### 予定している付属クライアント
+コンパイル・実行時は fat jar をクラスパスに追加：
 
-- **SQLInterpreter** — 対話的にSQLを実行するREPL
+```bash
+javac -cp easy-peasy-db/target/easy-peasy-db-1.0-SNAPSHOT.jar MyClient.java
+java  -cp easy-peasy-db/target/easy-peasy-db-1.0-SNAPSHOT.jar:. MyClient
+```
+
+### 対話クライアント (未実装)
+
+以下は今後追加予定：
+
+- **SQLInterpreter** — 対話的に SQL を実行する REPL
 - **StudentMajors** — 学生と専攻名を一覧
 - **FindMajors** — 指定学科の学生を検索
 - **ChangeMajor** — 学生の専攻を更新
@@ -188,8 +208,8 @@ while (rs.next()) {
 | SQL パーサ / プランナ / 実行 | 実装済み |
 | インデックス (B+Tree / Hash) | 実装済み |
 | トランザクション / WAL / リカバリ | 実装済み |
-| サーバー起動 (`StartUp`) | スケルトンのみ (RMI 未バインド) |
+| サーバー起動 (`StartUp`) | 実装済み (RMI バインド済み) |
 | Embedded サンプル (`CreateStudentDB`) | 実装済み |
-| JDBC ドライバ (クライアント側) | スタブ |
-| RMI 経由のリモート接続 | 未実装 |
+| JDBC ドライバ — Embedded / Network | 実装済み |
+| RMI 経由のリモート接続 | 実装済み (`NetworkDriver`) |
 | 対話クライアント (SQLInterpreter 等) | 未実装 |

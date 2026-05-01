@@ -8,3 +8,6 @@
 
 # Build output
 /easy-peasy-db/target/
+
+# data
+/studentdb*/

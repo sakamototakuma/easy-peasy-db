@@ -168,17 +168,6 @@ Database-Implementation/
   ├── src/test/java/
   └── src/site/
 ```
-
----
-
-## Roadmap (WIP)
-
-- [ ] SQL サポート範囲の拡張（集約/結合/最適化強化）
-- [ ] 実行計画と統計情報の連携強化
-- [ ] 同時実行制御と回復の検証ケース拡充
-- [ ] ベンチマーク指標・レポート整備
-- [ ] ドキュメント（設計ノート/図）の継続更新
-
 ---
 
 ## Acknowledgements
