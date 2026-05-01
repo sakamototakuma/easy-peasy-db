@@ -48,6 +48,15 @@ public class Parser {
         return pred;
     }
 
+    // 先頭の "explain" を消費.あれば true。
+    public boolean eatExplain() {
+        if (lex.matchKeyword("explain")) {
+            lex.eatKeyword("explain");
+            return true;
+        }
+        return false;
+    }
+
     // クエリをパースするためのメソッド
     public QueryData query() {
         lex.eatKeyword("select");

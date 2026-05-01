@@ -19,6 +19,35 @@ public class Planner {
         return qPlanner.createPlan(data, tx);
     }
 
+    /**
+     * "explain select ..." を受け取り、プラン木と実行時間を文字列で返す。
+     * 先頭の "explain" キーワードは省略可（あっても無くても動く）。
+     * 実際にプランを open() して全行走査し、経過時間を計測する。
+     */
+    public String explainQuery(String cmd, Transaction tx) {
+        Parser parser = new Parser(cmd);
+        parser.eatExplain();
+        QueryData data = parser.query();
+        Plan plan = qPlanner.createPlan(data, tx);
+
+        long start = System.nanoTime();
+        int rows = 0;
+        esypsydb.query.Scan s = plan.open();
+        try {
+            while (s.next())
+                rows++;
+        } finally {
+            s.close();
+        }
+        long elapsedNs = System.nanoTime() - start;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(PlanFormatter.format(plan));
+        sb.append(String.format("Execution time: %.3f ms (actual rows=%d)%n",
+                                elapsedNs / 1_000_000.0, rows));
+        return sb.toString();
+    }
+
     public int executeUpdate(String cmd, Transaction tx) {
         Parser parser = new Parser(cmd);
         Object obj = parser.updateCmd();
