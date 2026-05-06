@@ -228,31 +228,42 @@ bye.
 
 ### サンプルデータ
 
-`samples/student/` にスキーマとデータ生成スクリプトがあります。`data.sql` は `.gitignore` 対象なので、ローカルで生成して使います。
+`samples/student/` のスキーマと生成スクリプトを使ってデータを投入できます。`data.sql` は `.gitignore` 対象（毎回ローカル生成）。
+
+最短手順は `bench_load.sh`：プロファイルを指定するとビルド・データ生成・ロードまで一気に行います。
 
 ```bash
-# 1. スキーマ作成 (必要なら新しい DB ディレクトリで)
+./bench_load.sh                  # bench-medium / dbname=benchdb
+./bench_load.sh bench-small mybench
+./bench_load.sh bench-large hugebench
+```
+
+| profile | student | enroll | 用途 |
+|---|---:|---:|---|
+| `smoke` | 5K | 5K | 動作確認 |
+| `bench-small` | 50K | 100K | バッファプール内 |
+| **`bench-medium`** | **200K** | **500K** | **推奨**: プール超え |
+| `bench-large` | 500K | 2M | 本格ベンチ |
+
+手動で行いたい場合：
+
+```bash
 ./start-cli.sh demo < samples/student/schema.sql
-
-# 2. data.sql を生成 (既定: student/enroll 各 5000 行)
-python3 samples/student/gen_data.py
-
-# 3. ロード
+python3 samples/student/gen_data.py --profile bench-medium    # または --students/--enrolls
 ./start-cli.sh demo < samples/student/data.sql
 ```
 
-行数を変えたい場合：
+#### データ量の見積もり
 
-```bash
-python3 samples/student/gen_data.py --students 100000 --enrolls 200000 --seed 42
+スロットサイズは `4 (USED フラグ) + Σ field_bytes`。`int = 4`、`varchar(N) = 4 + N` (US-ASCII)。
+
+```
+records_per_block = floor(BLOCK_SIZE / slot_size)
+table_blocks      = ceil(N / records_per_block)
+table_bytes       = table_blocks × BLOCK_SIZE
 ```
 
-| 目的 | 推奨件数 |
-|---|---|
-| 動作確認・EXPLAIN の確認 | 5K (既定) |
-| index による blocks 削減を実測 | student 50K-100K + enroll 100K |
-| multibuffer join の chunk 分割を観察 | 両側 100K + `BUFFER_SIZE` を一時的に小さく (例 8) |
-| ベンチマーク的比較 | 500K-1M |
+`student` (slot=30B、136 rows/block) の例：200K 行 → 約 1471 block → **5.7 MiB**。バッファプール 4 MiB を超えるので I/O が発生し、index/multibuffer の挙動を観察できます。
 
 ---
 
