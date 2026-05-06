@@ -216,7 +216,7 @@ SQL> exit
 bye.
 ```
 
-`explain` プレフィックスで `Planner.explainQuery` を呼び、プラン木のコスト見積もりと実測の実行時間を出力します。
+`explain` プレフィックスで `Planner.explainQuery` を呼び、プラン木のコスト見積もりと実測の実行時間を出力します
 
 ### スクリプト実行
 
@@ -255,7 +255,7 @@ python3 samples/student/gen_data.py --profile bench-medium    # または --stud
 
 #### データ量の見積もり
 
-スロットサイズは `4 (USED フラグ) + Σ field_bytes`。`int = 4`、`varchar(N) = 4 + N` (US-ASCII)。
+スロットサイズは `4 (USED フラグ) + Σ field_bytes`.`int = 4`、`varchar(N) = 4 + N` (US-ASCII)。
 
 ```
 records_per_block = floor(BLOCK_SIZE / slot_size)
@@ -289,6 +289,12 @@ Database-Implementation/
   ├── src/test/java/
   └── src/site/
 ```
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
 ---
 
 ## Acknowledgements
