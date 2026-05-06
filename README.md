@@ -4,13 +4,12 @@ Java で実装している、教育用の Database Engine です。
 JDBC クライアントから利用することを想定し、DBMS の内部実装をブラックボックスのまま扱うのではなく、ストレージ管理・インデックス・クエリ処理・トランザクション・復旧がどのように連携しているかを、実装しながら理解することを目的に開発しています。
 
 > **Status:** Work in Progress  
-> 本リポジトリは継続的に改良中です。機能追加・設計見直し・性能評価を並行して進めています。
 
 ---
 
 ## Motivation
 
-普段アプリケーション開発で利用する RDBMS は非常に高機能ですが、その分、内部で何が起きているかは見えにくくなりがちです。  
+普段アプリケーション開発で利用するRDBMSは非常に高機能ですが、その分、内部で何が起きているかは見えにくくなりがちです。  
 このリポジトリでは、以下のような問いに実装ベースで向き合うことを目的にしています。
 
 - レコードはどのようにページへ配置されるのか
@@ -166,7 +165,7 @@ cd ..
 ./start-cli.sh mydb           # 任意の DB ディレクトリ名を指定可能
 ```
 
-`start-cli.sh` は CWD をリポジトリルートに固定するため、DB ディレクトリは常に `Database-Implementation/<dbname>/` に作られます。指定したディレクトリが存在しなければ新規作成、存在すればリカバリして開きます。
+`start-cli.sh` は CWD をリポジトリルートに固定するため、DB ディレクトリは常に `<repo-root>/<dbname>/` に作られます。指定したディレクトリが存在しなければ新規作成、存在すればリカバリして開きます。
 
 > **注意:** スクリプトを使わず素の `java -cp ...` で起動する場合、DB ディレクトリは JVM の CWD 配下に作られます。`easy-peasy-db/` から起動すると `easy-peasy-db/studentdb/` ができてしまうため `start-cli.sh` の利用を推奨。
 
@@ -274,14 +273,12 @@ table_bytes       = table_blocks × BLOCK_SIZE
 - Embedded: `jdbc:esypsydb:<db-directory>`
 - Network: `jdbc:easypeasydb://<host>`（RMI レジストリはコード上で `1099` 固定）
 
-※ 起動・接続フローは今後見直しの可能性があります。
-
 ---
 
 ## Repository Structure
 
 ```text
-Database-Implementation/
+easy-peasy-db/
 ├── README.md
 └── easy-peasy-db/
   ├── pom.xml
