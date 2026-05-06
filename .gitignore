@@ -11,3 +11,6 @@
 
 # data
 /studentdb*/
+
+# generated sample data (use samples/student/gen_data.py to regenerate)
+/samples/student/data.sql

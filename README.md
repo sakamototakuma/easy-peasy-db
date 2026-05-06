@@ -226,6 +226,34 @@ bye.
 ./start-cli.sh < schema.sql
 ```
 
+### サンプルデータ
+
+`samples/student/` にスキーマとデータ生成スクリプトがあります。`data.sql` は `.gitignore` 対象なので、ローカルで生成して使います。
+
+```bash
+# 1. スキーマ作成 (必要なら新しい DB ディレクトリで)
+./start-cli.sh demo < samples/student/schema.sql
+
+# 2. data.sql を生成 (既定: student/enroll 各 5000 行)
+python3 samples/student/gen_data.py
+
+# 3. ロード
+./start-cli.sh demo < samples/student/data.sql
+```
+
+行数を変えたい場合：
+
+```bash
+python3 samples/student/gen_data.py --students 100000 --enrolls 200000 --seed 42
+```
+
+| 目的 | 推奨件数 |
+|---|---|
+| 動作確認・EXPLAIN の確認 | 5K (既定) |
+| index による blocks 削減を実測 | student 50K-100K + enroll 100K |
+| multibuffer join の chunk 分割を観察 | 両側 100K + `BUFFER_SIZE` を一時的に小さく (例 8) |
+| ベンチマーク的比較 | 500K-1M |
+
 ---
 
 ## JDBC Notes (Current Implementation)
