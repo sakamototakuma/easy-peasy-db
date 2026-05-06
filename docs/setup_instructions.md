@@ -175,11 +175,12 @@ javac -cp easy-peasy-db/target/easy-peasy-db-1.0-SNAPSHOT.jar MyClient.java
 java  -cp easy-peasy-db/target/easy-peasy-db-1.0-SNAPSHOT.jar:. MyClient
 ```
 
-### 対話クライアント (未実装)
+### 対話クライアント
+
+- **SQLInterpreter** (`esypsydb.cli.SQLInterpreter`) — 対話的に SQL を実行する REPL。リポジトリルートの `start-cli.sh` から起動。詳細は README の "SQL Interpreter (REPL)" セクション参照。
 
 以下は今後追加予定：
 
-- **SQLInterpreter** — 対話的に SQL を実行する REPL
 - **StudentMajors** — 学生と専攻名を一覧
 - **FindMajors** — 指定学科の学生を検索
 - **ChangeMajor** — 学生の専攻を更新
@@ -212,4 +213,4 @@ java  -cp easy-peasy-db/target/easy-peasy-db-1.0-SNAPSHOT.jar:. MyClient
 | Embedded サンプル (`CreateStudentDB`) | 実装済み |
 | JDBC ドライバ — Embedded / Network | 実装済み |
 | RMI 経由のリモート接続 | 実装済み (`NetworkDriver`) |
-| 対話クライアント (SQLInterpreter 等) | 未実装 |
+| 対話クライアント (`SQLInterpreter`) | 実装済み (`esypsydb.cli.SQLInterpreter`) |

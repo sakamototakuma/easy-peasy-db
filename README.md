@@ -29,6 +29,8 @@ JDBC クライアントから利用することを想定し、DBMS の内部実�
 
 - テーブル作成
 - `insert / select / update / delete`
+- `explain` 句（プラン木 + 実行時間の表示）
+- 対話的 SQL 実行 (`SQLInterpreter` REPL)
 - インデックス
 - B+Tree ベースのデータ構造
 - ページ管理
@@ -89,6 +91,7 @@ Storage Manager / Buffer / Log / File
 | `opt` | クエリ最適化、Heuristicによるjoin order・Index選択 |
 | `jdbc` | Embedded / Network 経由の JDBC インターフェース |
 | `server` | DB 初期化・起動エントリポイント |
+| `cli` | 対話的 SQL シェル (`SQLInterpreter`) |
 
 ---
 
@@ -142,6 +145,85 @@ mvn test
 ```bash
 cd easy-peasy-db
 mvn site
+```
+
+---
+
+## SQL Interpreter (REPL)
+
+対話的にSQLを実行するためのREPLを `esypsydb.cli.SQLInterpreter` として提供しています。
+
+### Quick Start
+
+```bash
+# 1. ビルド (初回 / コード変更時)
+cd easy-peasy-db
+mvn -q compile
+cd ..
+
+# 2. 起動 (リポジトリルートから)
+./start-cli.sh                # studentdb を使用
+./start-cli.sh mydb           # 任意の DB ディレクトリ名を指定可能
+```
+
+`start-cli.sh` は CWD をリポジトリルートに固定するため、DB ディレクトリは常に `Database-Implementation/<dbname>/` に作られます。指定したディレクトリが存在しなければ新規作成、存在すればリカバリして開きます。
+
+> **注意:** スクリプトを使わず素の `java -cp ...` で起動する場合、DB ディレクトリは JVM の CWD 配下に作られます。`easy-peasy-db/` から起動すると `easy-peasy-db/studentdb/` ができてしまうため `start-cli.sh` の利用を推奨。
+
+### 入力ルール
+
+- 文の終端は **`;`**。終端が見つかるまで複数行入力できます (継続プロンプト ` ... `)
+- 空行はスキップ
+- メタコマンド (`;` 不要):
+  - `help` または `?` … 使い方を表示
+  - `exit` または `quit` … 終了
+
+各文ごとに新しいトランザクションを開始し、エラー時は自動 rollback します。
+
+### 対応している SQL
+
+| 種別 | 例 |
+|---|---|
+| DDL | `create table t(id int, name varchar(10));`<br>`create index idx_id on t(id);`<br>`create view v as select id from t;` |
+| DML | `insert into t(id, name) values(1, 'foo');`<br>`update t set name = 'bar' where id = 1;`<br>`delete from t where id = 1;` |
+| Query | `select id, name from t where id = 1;` |
+| Explain | `explain select id from t where id = 1;` |
+
+### セッション例
+
+```text
+$ ./start-cli.sh
+EasyPeasyDB SQL Interpreter (db=studentdb)
+Statements end with ';'. Type 'help' for usage, 'exit' to quit.
+SQL> create table t1(
+ ... id int,
+ ... name varchar(10)
+ ... );
+0 rows affected.
+SQL> insert into t1(id, name) values(1, 'foo');
+1 rows affected.
+SQL> select id, name from t1;
+id             name
+------------------------------
+1              foo
+(1 rows)
+SQL> explain select id from t1 where id = 1;
+- ProjectPlan [blocks=1, rows=1]
+  - SelectPlan [blocks=1, rows=1]
+    - TablePlan [blocks=1, rows=1]
+Execution time: 0.812 ms (actual rows=1)
+SQL> exit
+bye.
+```
+
+`explain` プレフィックスで `Planner.explainQuery` を呼び、プラン木のコスト見積もりと実測の実行時間を出力します。
+
+### スクリプト実行
+
+標準入力リダイレクトでバッチ実行できます。
+
+```bash
+./start-cli.sh < schema.sql
 ```
 
 ---
