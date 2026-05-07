@@ -1,6 +1,7 @@
 /.github
 /.vscode
 /.idea/
+.claude
 *.iml
 
 # OS files
