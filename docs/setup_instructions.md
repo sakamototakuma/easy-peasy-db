@@ -101,7 +101,7 @@ samples/student/
   data.sql      # INSERT 文 (データを増やすときはここに追記)
 ```
 
-これを [CreateStudentDB.java](../easy-peasy-db/src/main/java/esypsydb/samples/CreateStudentDB.java) (Embedded モード) で読み込みます。サーバは起動不要 (同じDBファイルへのアクセスとなるため、むしろ止めてから実行してください)。
+これを [CreateStudentDB.java](../easy-peasy-db/src/main/java/esypsydb/samples/CreateStudentDB.java) (Embedded モード) で読み込みます。サーバは起動不要 (同じ DB ファイルへのアクセスとなるため、むしろ止めてから実行してください)。
 
 ```bash
 # リポジトリのルートから実行

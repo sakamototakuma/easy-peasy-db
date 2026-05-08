@@ -13,6 +13,9 @@
 # data
 /studentdb*/
 /smokebench*/
+/smallbench*/
+/mediumbench*/
+/largebench*/
 data.sql
 
 # generated sample data (use samples/student/gen_data.py to regenerate)
