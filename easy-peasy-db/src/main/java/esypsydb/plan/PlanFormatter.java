@@ -16,8 +16,10 @@ public class PlanFormatter {
         sb.append(indent)
           .append("- ").append(p.getClass().getSimpleName())
           .append(" [blocks=").append(p.blocksAccessed())
-          .append(", rows=").append(p.recordsOutput())
-          .append("]\n");
+          .append(", rows=").append(p.recordsOutput());
+        //   for (String fld : p.schema().fields())
+        //     sb.append(", distinct(").append(fld).append(")=").append(p.distinctValues(fld));
+            sb.append("]\n");
         for (Plan child : children(p))
             format(child, indent + "  ", sb);
     }
