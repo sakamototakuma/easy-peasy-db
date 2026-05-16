@@ -30,7 +30,7 @@ public class StatMgr {
    public synchronized StatInfo getStatInfo(String tblname, 
                               Layout layout, Transaction tx) {
       numcalls++;
-      if (numcalls > 100)
+      if (numcalls > 100_000)
          refreshStatistics(tx);
       StatInfo si = tablestats.get(tblname);
       if (si == null) {

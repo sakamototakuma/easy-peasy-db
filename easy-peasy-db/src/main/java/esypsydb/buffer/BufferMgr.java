@@ -23,11 +23,17 @@ public class BufferMgr {
         return numAvailable;
     }
 
-    // プール内の汚れたバッファを全て書き出し
+    // 指定 tx が変更した dirty バッファを書き出し（WAL 用）
     public synchronized void flushAll(int txnum) {
         for (Buffer buff : bufferpool)
             if (buff.modifyingTx() == txnum)
                 buff.flush();
+    }
+
+    // プール内の全 dirty バッファを書き出し（チェックポイント用）
+    public synchronized void flushAllDirty() {
+        for (Buffer buff : bufferpool)
+            buff.flush();
     }
 
     // unpin：バッファの返却

@@ -1,6 +1,8 @@
 package esypsydb.cli;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.sql.Types;
@@ -32,76 +34,138 @@ public class SQLInterpreter {
 
     private static Terminal terminal;
     private static PrintWriter out;
+    private static boolean interactive;
 
     public static void main(String[] args) throws IOException {
         String dbname = args.length > 0 ? args[0] : "studentdb";
         EasyPeasyDB db = new EasyPeasyDB(dbname);
         Planner planner = db.planner();
 
+        interactive = System.console() != null;
         terminal = TerminalBuilder.builder().system(true).build();
-        out = terminal.writer();
+        out = interactive ? terminal.writer() : new PrintWriter(System.out, true);
 
-        LineReader reader = LineReaderBuilder.builder()
-                .terminal(terminal)
-                .highlighter(new SqlHighlighter())
-                .history(new DefaultHistory())
-                .variable(LineReader.HISTORY_FILE,
-                        Paths.get(System.getProperty("user.home"), ".easypeasydb_history"))
-                .variable(LineReader.HISTORY_SIZE, 500)
-                .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
-                .build();
+        final int BATCH_SIZE = 2000;
+        Transaction batchTx = null;
+        int batchCount = 0;
+        int totalInserted = 0;
+        int spinIdx = 0;
+        final char[] SPINNER = {'|', '/', '-', '\\'};
 
-        printBanner(dbname);
+        if (interactive) {
+            LineReader reader = LineReaderBuilder.builder()
+                    .terminal(terminal)
+                    .highlighter(new SqlHighlighter())
+                    .history(new DefaultHistory())
+                    .variable(LineReader.HISTORY_FILE,
+                            Paths.get(System.getProperty("user.home"), ".easypeasydb_history"))
+                    .variable(LineReader.HISTORY_SIZE, 500)
+                    .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
+                    .build();
 
-        StringBuilder buf = new StringBuilder();
-        while (true) {
-            String promptStr = buf.length() == 0
-                    ? ansi("SQL> ", AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN).bold())
-                    : ansi(" ... ", AttributedStyle.DEFAULT.faint());
-            String line;
-            try {
-                line = reader.readLine(promptStr);
-            } catch (UserInterruptException e) {
+            printBanner(dbname);
+
+            StringBuilder buf = new StringBuilder();
+            while (true) {
+                String promptStr = buf.length() == 0
+                        ? ansi("SQL> ", AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN).bold())
+                        : ansi(" ... ", AttributedStyle.DEFAULT.faint());
+                String line;
+                try {
+                    line = reader.readLine(promptStr);
+                } catch (UserInterruptException e) {
+                    buf.setLength(0);
+                    out.println(dim("(cancelled)"));
+                    out.flush();
+                    continue;
+                } catch (EndOfFileException e) {
+                    break;
+                }
+
+                String trimmed = line.trim();
+                if (buf.length() == 0) {
+                    if (trimmed.isEmpty()) continue;
+                    if (trimmed.equalsIgnoreCase("exit") || trimmed.equalsIgnoreCase("quit")) break;
+                    if (trimmed.equalsIgnoreCase("help") || trimmed.equals("?")) {
+                        printHelp();
+                        continue;
+                    }
+                }
+
+                if (buf.length() > 0) buf.append('\n');
+                buf.append(line);
+
+                if (!buf.toString().trim().endsWith(";")) continue;
+
+                String stmt = buf.toString().trim();
+                stmt = stmt.substring(0, stmt.length() - 1).trim();
                 buf.setLength(0);
-                out.println(dim("(cancelled)"));
+                if (stmt.isEmpty()) continue;
+
+                reader.getHistory().add(stmt + ";");
+                execute(planner, db, stmt);
                 out.flush();
-                continue;
-            } catch (EndOfFileException e) {
-                break;
             }
 
-            String trimmed = line.trim();
-            if (buf.length() == 0) {
-                if (trimmed.isEmpty())
-                    continue;
-                if (trimmed.equalsIgnoreCase("exit") || trimmed.equalsIgnoreCase("quit"))
-                    break;
-                if (trimmed.equalsIgnoreCase("help") || trimmed.equals("?")) {
-                    printHelp();
-                    continue;
+        } else {
+            // batch (piped) mode — plain BufferedReader, no prompts
+            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+            StringBuilder buf = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (buf.length() > 0) buf.append('\n');
+                buf.append(line);
+
+                if (!buf.toString().trim().endsWith(";")) continue;
+
+                String stmt = buf.toString().trim();
+                stmt = stmt.substring(0, stmt.length() - 1).trim();
+                buf.setLength(0);
+                if (stmt.isEmpty()) continue;
+
+                if (isUpdateStmt(stmt)) {
+                    try {
+                        if (batchTx == null) batchTx = db.newTx();
+                        planner.executeUpdate(stmt, batchTx);
+                        totalInserted++;
+                        if (++batchCount >= BATCH_SIZE) {
+                            batchTx.commit();
+                            batchTx = null;
+                            batchCount = 0;
+                            System.err.printf("\rDB作成中... %c  %,d 件", SPINNER[spinIdx++ % 4], totalInserted);
+                            System.err.flush();
+                        }
+                    } catch (RuntimeException e) {
+                        if (batchTx != null) { batchTx.rollback(); batchTx = null; batchCount = 0; }
+                        String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+                        System.err.println("\nError: " + msg);
+                        e.printStackTrace(System.err);
+                    }
+                } else {
+                    if (batchTx != null) {
+                        try { batchTx.commit(); } catch (RuntimeException e) { batchTx.rollback(); }
+                        batchTx = null;
+                        batchCount = 0;
+                    }
+                    execute(planner, db, stmt);
                 }
             }
-
-            if (buf.length() > 0)
-                buf.append('\n');
-            buf.append(line);
-
-            if (!buf.toString().trim().endsWith(";"))
-                continue;
-
-            String stmt = buf.toString().trim();
-            stmt = stmt.substring(0, stmt.length() - 1).trim();
-            buf.setLength(0);
-            if (stmt.isEmpty())
-                continue;
-
-            reader.getHistory().add(stmt + ";");
-            execute(planner, db, stmt);
-            out.flush();
         }
 
-        out.println(dim("bye."));
-        out.flush();
+        if (batchTx != null) {
+            try { batchTx.commit(); } catch (RuntimeException e) { batchTx.rollback(); }
+        }
+        if (!interactive && totalInserted > 0) {
+            System.err.printf("\rDB作成中... 完了  %,d 件%n", totalInserted);
+            System.err.flush();
+        }
+
+        db.checkpoint();
+
+        if (interactive) {
+            out.println(dim("bye."));
+            out.flush();
+        }
         terminal.close();
     }
 
@@ -124,12 +188,20 @@ public class SQLInterpreter {
                 tx.commit();
             } else {
                 int n = planner.executeUpdate(stmt, tx);
-                out.println(green(n + " rows affected."));
+                if (interactive) {
+                    if (lower.startsWith("create") || lower.startsWith("drop"))
+                        out.println(green("OK."));
+                    else
+                        out.println(green(n + " rows affected."));
+                }
                 tx.commit();
             }
         } catch (RuntimeException e) {
             tx.rollback();
-            out.println(red("Error: " + e.getMessage()));
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+            out.println(red("Error: " + msg));
+            e.printStackTrace(out);
+            out.flush();
         }
     }
 
@@ -172,8 +244,17 @@ public class SQLInterpreter {
             tx.commit();
         } catch (RuntimeException e) {
             tx.rollback();
-            out.println(red("Error: " + e.getMessage()));
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+            out.println(red("Error: " + msg));
+            e.printStackTrace(out);
+            out.flush();
         }
+    }
+
+    private static boolean isUpdateStmt(String stmt) {
+        String lower = stmt.toLowerCase();
+        return lower.startsWith("insert") || lower.startsWith("update")
+                || lower.startsWith("delete") || lower.startsWith("create");
     }
 
     // ── result display ─────────────────────────────────────────

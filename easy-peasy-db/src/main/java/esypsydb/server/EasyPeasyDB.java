@@ -9,6 +9,7 @@ import esypsydb.metadata.MetadataMgr;
 import esypsydb.index.planner.IndexUpdatePlanner;
 import esypsydb.opt.HeuristicQueryPlanner;
 import esypsydb.plan.*;
+import esypsydb.tx.recovery.CheckpointRecord;
 
 public class EasyPeasyDB {
     public static int BLOCK_SIZE = 4096;
@@ -63,6 +64,12 @@ public class EasyPeasyDB {
 
     public BufferMgr bufferMgr() {
         return bm;
+    }
+
+    public void checkpoint() {
+        bm.flushAllDirty();
+        int lsn = CheckpointRecord.writeToLog(lm);
+        lm.flush(lsn);
     }
 
     public static void main(String[] args) {
