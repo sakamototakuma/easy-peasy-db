@@ -28,7 +28,7 @@ public class HeuristicQueryPlanner implements QueryPlanner {
             tableplanners.add(tp);
         }
 
-        // Step2: 最初のjoin orderの先頭を決める. 最小の出力件数 heuristic 5a
+        // Step2: 最初のjoin orderの先頭を決める. 最も制約の強い選択述語 heuristic 5b
         Plan currentplan = getLowestSelectPlan();
 
         // Step3: joinできる表があるなら、繰り返しjoin orderに最良のplanを追加する
@@ -47,19 +47,24 @@ public class HeuristicQueryPlanner implements QueryPlanner {
     }
 
     /**
-     * 各表に対して makeSelectPlan()を行い、recordsOutput()が
-     * 最小のものを選ぶ
-     * 
-     * @return
+     * Heuristic 5b: 各表の selectivity = recordsOutput / rawOutput を計算し、
+     * 最も制約の強い（selectivity 最小）選択述語を持つ表を選ぶ。
+     * 述語のない表は selectivity = 1.0 となり後回しになる。
+     *
+     * Heuristic 5a（最小 recordsOutput で選択）
      */
     private Plan getLowestSelectPlan() {
         TablePlanner besttp = null;
         Plan bestplan = null;
+        double bestSelectivity = Double.MAX_VALUE;
         for (TablePlanner tp : tableplanners) {
             Plan plan = tp.makeSelectPlan();
-            if (bestplan == null || plan.recordsOutput() < bestplan.recordsOutput()) {
+            int raw = tp.rawOutput();
+            double selectivity = (raw == 0) ? 0.0 : (double) plan.recordsOutput() / raw;
+            if (bestplan == null || selectivity < bestSelectivity) {
                 besttp = tp;
                 bestplan = plan;
+                bestSelectivity = selectivity;
             }
         }
         tableplanners.remove(besttp);

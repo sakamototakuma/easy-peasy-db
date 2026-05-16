@@ -27,6 +27,11 @@ public class TablePlanner {
         indexes = mdm.getIndexInfo(tblname, tx);
     }
 
+    // 選択述語適用前の生レコード数
+    public int rawOutput() {
+        return myplan.recordsOutput();
+    }
+
     // Index Selectできるか試す
     public Plan makeSelectPlan() {
         Plan p = makeIndexSelect();
