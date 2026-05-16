@@ -2,14 +2,19 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CLASSES="$SCRIPT_DIR/easy-peasy-db/target/classes"
+PROJ="$SCRIPT_DIR/easy-peasy-db"
+CLASSES="$PROJ/target/classes"
+DEPS="$PROJ/target/dependency"
 
 if [ ! -d "$CLASSES" ]; then
-    echo "Classes not found: $CLASSES" >&2
-    echo "Run 'cd easy-peasy-db && mvn -q compile' first." >&2
-    exit 1
+    echo "Compiling..." >&2
+    (cd "$PROJ" && mvn -q compile)
 fi
 
-cd "$SCRIPT_DIR"
+if [ ! -d "$DEPS" ]; then
+    echo "Fetching dependencies..." >&2
+    (cd "$PROJ" && mvn -q dependency:copy-dependencies -DincludeGroupIds=org.jline)
+fi
+
 DBNAME="${1:-studentdb}"
-exec java -cp "$CLASSES" esypsydb.cli.SQLInterpreter "$DBNAME"
+exec java -cp "$CLASSES:$DEPS/*" esypsydb.cli.SQLInterpreter "$DBNAME"
