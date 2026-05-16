@@ -63,8 +63,10 @@ public class MultiBufferProductScan implements Scan {
    }
 
    public boolean useNextChunk() {
-    if (rhsscan != null)
+    if (rhsscan != null) {
         rhsscan.close();
+        rhsscan = null;
+    }
       if (nextblknum >= filesize) {
          prodscan = null;
         return false;

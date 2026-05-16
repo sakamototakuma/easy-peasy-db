@@ -6,6 +6,8 @@ import esypsydb.log.LogMgr;
 import esypsydb.buffer.BufferMgr;
 import esypsydb.tx.Transaction;
 import esypsydb.metadata.MetadataMgr;
+import esypsydb.index.planner.IndexUpdatePlanner;
+import esypsydb.opt.HeuristicQueryPlanner;
 import esypsydb.plan.*;
 
 public class EasyPeasyDB {
@@ -33,9 +35,9 @@ public class EasyPeasyDB {
         if (!isNew)
             tx.recover();
         mdm = new MetadataMgr(isNew, tx);
-        QueryPlanner qp = new BasicQueryPlanner(mdm);
-        UpdatePlanner up = new BasicUpdatePlanner(mdm);
-        planner = new Planner(qp, up);
+        QueryPlanner queryPlanner = new HeuristicQueryPlanner(mdm);
+        UpdatePlanner updatePlanner = new IndexUpdatePlanner(mdm);
+        planner = new Planner(queryPlanner, updatePlanner);
         tx.commit();
     }
 

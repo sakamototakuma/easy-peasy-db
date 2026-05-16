@@ -20,6 +20,7 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 
     @Override
     public Plan createPlan(QueryData data, Transaction tx) {
+        tableplanners.clear();
 
         // Step1: FROM句の各テーブルのTablePlannerオブジェクトを作成
         for (String tblname : data.tables()) {
@@ -93,6 +94,4 @@ public class HeuristicQueryPlanner implements QueryPlanner {
         tableplanners.remove(besttp);
         return bestplan;
     } 
-
-    
 }
