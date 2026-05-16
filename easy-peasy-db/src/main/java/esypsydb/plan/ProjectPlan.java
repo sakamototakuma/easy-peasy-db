@@ -9,9 +9,11 @@ import esypsydb.record.Schema;
 public class ProjectPlan implements Plan {
     private Plan p;
     private Schema schema = new Schema();
+    private List<String> fieldlist;
     
     public ProjectPlan(Plan p, List<String> fieldlist) {
         this.p = p;
+        this.fieldlist = fieldlist;
         for (String fldname : fieldlist)
         schema.add(fldname, p.schema());
     }
@@ -21,6 +23,16 @@ public class ProjectPlan implements Plan {
         Scan s = p.open();
         return 
         new ProjectScan(s, schema.fields());
+    }
+
+    @Override
+    public String nodeTypeName() {
+        return "Project";
+    }
+
+    @Override
+    public List<String> extraInfoLines() {
+        return List.of("Output: " + String.join(", ", fieldlist));
     }
 
     public String accessMethod() {

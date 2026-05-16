@@ -28,6 +28,11 @@ public class MultiBufferProductPlan implements Plan {
         return new MultiBufferProductScan(leftscan, filename, layout, tx);
     }
 
+    @Override
+    public String nodeTypeName() {
+        return "Nested Loop (chunked)";
+    }
+
     public String accessMethod() {
         return "multi-buffer-product";
     }

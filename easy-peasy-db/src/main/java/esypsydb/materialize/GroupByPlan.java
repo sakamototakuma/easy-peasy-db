@@ -6,6 +6,7 @@ import esypsydb.query.Scan;
 import esypsydb.tx.Transaction;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GroupByPlan implements Plan {
     private Plan p;
@@ -32,6 +33,24 @@ public class GroupByPlan implements Plan {
     public Scan open() {
         Scan s = p.open();
         return new GroupByScan(s, groupfields, aggfns);
+    }
+
+    @Override
+    public String nodeTypeName() {
+        return "GroupAggregate";
+    }
+
+    @Override
+    public List<String> extraInfoLines() {
+        List<String> lines = new ArrayList<>();
+        lines.add("Group Key: " + String.join(", ", groupfields));
+        if (!aggfns.isEmpty()) {
+            String aggStr = aggfns.stream()
+                .map(fn -> fn.fieldName())
+                .collect(Collectors.joining(", "));
+            lines.add("Aggregates: " + aggStr);
+        }
+        return lines;
     }
 
     public String accessMethod() {

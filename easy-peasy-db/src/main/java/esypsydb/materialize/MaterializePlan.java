@@ -43,6 +43,11 @@ public class MaterializePlan implements Plan {
         return "TableScan";
     }
 
+    @Override
+    public String nodeTypeName() {
+        return "Materialize";
+    }
+
     public String accessMethod() {
         return "materialize-to-temp-table";
     }

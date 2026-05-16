@@ -34,6 +34,16 @@ public class MergeJoinPlan implements Plan {
         return new MergeJoinScan(s1, s2, fldname1, fldname2);
     }
 
+    @Override
+    public String nodeTypeName() {
+        return "Merge Join";
+    }
+
+    @Override
+    public List<String> extraInfoLines() {
+        return List.of("Merge Cond: (" + fldname1 + " = " + fldname2 + ")");
+    }
+
     public String accessMethod() {
         return "merge-join(" + fldname1 + "=" + fldname2 + ")";
     }

@@ -11,10 +11,12 @@ public class SortPlan implements Plan {
     private Transaction tx;
     private Schema sch;
     private RecordComparator comp;
+    private List<String> sortfields;
 
     public SortPlan(Plan p, List<String> sortfields, Transaction tx) {
         this.p = p;
         this.tx = tx;
+        this.sortfields = sortfields;
         sch = p.schema();
         comp = new RecordComparator(sortfields);
     }
@@ -29,6 +31,16 @@ public class SortPlan implements Plan {
         while (runs.size() > 2)
             runs = doMergeIteration(runs);
         return new SortScan(runs, comp);
+    }
+
+    @Override
+    public String nodeTypeName() {
+        return "Sort";
+    }
+
+    @Override
+    public List<String> extraInfoLines() {
+        return List.of("Sort Key: " + String.join(", ", sortfields));
     }
 
     public String accessMethod() {

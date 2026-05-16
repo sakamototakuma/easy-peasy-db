@@ -1,5 +1,7 @@
 package esypsydb.plan;
 
+import java.util.List;
+
 import esypsydb.query.*;
 import esypsydb.record.Schema;
 
@@ -18,8 +20,18 @@ public class SelectPlan implements Plan {
         return new SelectScan(s, pred);
     }
 
+    @Override
+    public String nodeTypeName() {
+        return "Filter";
+    }
+
     public String accessMethod() {
         return "filter";
+    }
+
+    @Override
+    public List<String> extraInfoLines() {
+        return List.of("Filter: (" + pred.toString() + ")");
     }
 
     @Override
@@ -29,7 +41,8 @@ public class SelectPlan implements Plan {
 
     @Override
     public int recordsOutput() {
-        return p.recordsOutput();
+        // reductionFactor を使った推定
+        return Math.max(1, p.recordsOutput() / pred.reductionFactor(p));
     }
 
     @Override
@@ -38,9 +51,9 @@ public class SelectPlan implements Plan {
             return 1;
         else {
             String fldname2 = pred.equatesWithField(fldname);
-            if (fldname2 != null) 
+            if (fldname2 != null)
                 return Math.min(p.distinctValues(fldname), p.distinctValues(fldname2));
-            else 
+            else
                 return p.distinctValues(fldname);
         }
     }

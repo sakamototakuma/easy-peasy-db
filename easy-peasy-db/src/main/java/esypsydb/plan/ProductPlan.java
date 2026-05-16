@@ -21,6 +21,11 @@ public class ProductPlan implements Plan {
         return new ProductScan(s1, s2);
     }
 
+    @Override
+    public String nodeTypeName() {
+        return "Nested Loop";
+    }
+
     public String accessMethod() {
         return "nested-loop-product";
     }

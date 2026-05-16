@@ -7,6 +7,8 @@ import esypsydb.plan.Plan;
 import esypsydb.query.*;
 import esypsydb.record.*;
 
+import java.util.List;
+
 public class IndexJoinPlan implements Plan {
     private Plan p1, p2;
     private IndexInfo ii;
@@ -27,6 +29,16 @@ public class IndexJoinPlan implements Plan {
         TableScan ts = (TableScan) p2.open();
         Index idx = ii.open();
         return new IndexJoinScan(s, idx, joinfield, ts);
+    }
+
+    @Override
+    public String nodeTypeName() {
+        return "Index Join using " + ii.indexName();
+    }
+
+    @Override
+    public List<String> extraInfoLines() {
+        return List.of("Index Cond: (" + ii.fieldName() + " = " + joinfield + ")");
     }
 
     public String accessMethod() {

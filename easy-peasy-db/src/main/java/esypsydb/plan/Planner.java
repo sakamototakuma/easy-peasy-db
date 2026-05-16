@@ -14,38 +14,39 @@ public class Planner {
 
     public Plan createQueryPlan(String cmd, Transaction tx) {
         Parser parser = new Parser(cmd);
-        QueryData data = parser.query();  // クエリをパース
+        QueryData data = parser.query(); // クエリをパース
         // クエリ検証のコードをここに
         return qPlanner.createPlan(data, tx);
     }
 
     /**
-     * "explain select ..." を受け取り、プラン木と実行時間を文字列で返す。
-     * 先頭の "explain" キーワードは省略可（あっても無くても動く）。
-     * 実際にプランを open() して全行走査し、経過時間を計測する。
+     * "explain [analyze] select ..." を受け取り、プラン木を文字列で返す
+     * <ul>
+     * <li>{@code explain select ...} — 見積もりのみ（PostgreSQL の EXPLAIN 相当）</li>
+     * <li>{@code explain analyze select ...} — 実行して実測値付き
+     * （PostgreSQL の EXPLAIN ANALYZE 相当）</li>
+     * </ul>
      */
     public String explainQuery(String cmd, Transaction tx) {
         Parser parser = new Parser(cmd);
         parser.eatExplain();
+        boolean analyze = parser.eatAnalyze();
         QueryData data = parser.query();
+        // ── プラン作成（Planning Time 計測） ──
+        long planStart = System.nanoTime();
         Plan plan = qPlanner.createPlan(data, tx);
+        long planNs = System.nanoTime() - planStart;
 
-        long start = System.nanoTime();
-        int rows = 0;
-        esypsydb.query.Scan s = plan.open();
-        try {
-            while (s.next())
-                rows++;
-        } finally {
-            s.close();
+        if (analyze) {
+            // ── EXPLAIN ANALYZE: 実行して実測値を収集 ──
+            InstrumentedPlan root = InstrumentedPlan.instrument(plan);
+            long execNs = root.execute();
+
+            return PlanFormatter.formatAnalyze(root, planNs, execNs);
+        } else {
+            // ── EXPLAIN: 見積もりのみ ──
+            return PlanFormatter.format(plan);
         }
-        long elapsedNs = System.nanoTime() - start;
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(PlanFormatter.format(plan));
-        sb.append(String.format("Execution time: %.3f ms (actual rows=%d)%n",
-                                elapsedNs / 1_000_000.0, rows));
-        return sb.toString();
     }
 
     public int executeUpdate(String cmd, Transaction tx) {
@@ -54,22 +55,22 @@ public class Planner {
         // クエリ検証のコードをここに
         // INSERT
         if (obj instanceof InsertData)
-            return uplanner.executeInsert((InsertData)obj, tx);
+            return uplanner.executeInsert((InsertData) obj, tx);
         // DELETE
         else if (obj instanceof DeleteData)
-            return uplanner.executeDelete((DeleteData)obj, tx);
+            return uplanner.executeDelete((DeleteData) obj, tx);
         // UPDSTE
         else if (obj instanceof ModifyData)
-            return uplanner.executeModify((ModifyData)obj, tx);
+            return uplanner.executeModify((ModifyData) obj, tx);
         // CREATE TABLE
         else if (obj instanceof CreateTableData)
-            return uplanner.executeCreateTable((CreateTableData)obj, tx);
+            return uplanner.executeCreateTable((CreateTableData) obj, tx);
         // CREATE VIEW
         else if (obj instanceof CreateViewData)
-            return uplanner.executeCreateView((CreateViewData)obj, tx);
+            return uplanner.executeCreateView((CreateViewData) obj, tx);
         // CREATE INDEX
         else if (obj instanceof CreateIndexData)
-            return uplanner.executeCreateIndex((CreateIndexData)obj, tx);
+            return uplanner.executeCreateIndex((CreateIndexData) obj, tx);
         else
             return 0;
     }

@@ -9,6 +9,8 @@ import esypsydb.query.Scan;
 import esypsydb.record.Schema;
 import esypsydb.record.TableScan;
 
+import java.util.List;
+
 public class IndexSelectPlan implements Plan {
     private Plan p;
     private IndexInfo ii;
@@ -29,6 +31,16 @@ public class IndexSelectPlan implements Plan {
       TableScan ts = (TableScan) p.open();
       Index idx = ii.open();
       return new IndexSelectScan(ts, idx, val);
+   }
+
+   @Override
+   public String nodeTypeName() {
+      return "Index Scan using " + ii.indexName() + " on " + ii.fieldName();
+   }
+
+   @Override
+   public List<String> extraInfoLines() {
+      return List.of("Index Cond: (" + ii.fieldName() + " = " + val + ")");
    }
 
    public String accessMethod() {

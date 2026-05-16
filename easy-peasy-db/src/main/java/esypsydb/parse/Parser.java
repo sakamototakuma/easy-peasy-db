@@ -57,6 +57,15 @@ public class Parser {
         return false;
     }
 
+    // "explain" 直後の "analyze" を消費。あれば true。
+    public boolean eatAnalyze() {
+        if (lex.matchKeyword("analyze")) {
+            lex.eatKeyword("analyze");
+            return true;
+        }
+        return false;
+    }
+
     // クエリをパースするためのメソッド
     public QueryData query() {
         lex.eatKeyword("select");

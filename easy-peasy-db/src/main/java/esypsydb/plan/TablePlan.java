@@ -23,6 +23,11 @@ public class TablePlan implements Plan {
         return (Scan) new TableScan(tx, tblname, layout);
     }
 
+    @Override
+    public String nodeTypeName() {
+        return "Seq Scan on " + tblname;
+    }
+
     public String accessMethod() {
         return "full-table-scan(table=" + tblname + ")";
     }
