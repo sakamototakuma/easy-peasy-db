@@ -15,7 +15,11 @@ public class PlanFormatter {
     private static void format(Plan p, String indent, StringBuilder sb) {
         sb.append(indent)
           .append("- ").append(p.getClass().getSimpleName())
-          .append(" [blocks=").append(p.blocksAccessed())
+          .append(" [scan=").append(p.scanName());
+        String accessMethod = p.accessMethod();
+        if (!accessMethod.isBlank())
+            sb.append(", method=").append(accessMethod);
+        sb.append(", blocks=").append(p.blocksAccessed())
           .append(", rows=").append(p.recordsOutput());
         //   for (String fld : p.schema().fields())
         //     sb.append(", distinct(").append(fld).append(")=").append(p.distinctValues(fld));

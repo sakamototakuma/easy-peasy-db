@@ -23,6 +23,10 @@ public class ProjectPlan implements Plan {
         new ProjectScan(s, schema.fields());
     }
 
+    public String accessMethod() {
+        return "projection";
+    }
+
     @Override
     public int blocksAccessed() {
         return p.blocksAccessed();

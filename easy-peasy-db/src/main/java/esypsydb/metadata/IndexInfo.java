@@ -47,6 +47,18 @@ public class IndexInfo {
     // return new BTreeIndex(tx, idxname, idxLayout);
    }
 
+   public String indexName() {
+      return idxname;
+   }
+
+   public String fieldName() {
+      return fldname;
+   }
+
+   public String indexType() {
+      return HashIndex.class.getSimpleName();
+   }
+
    /**
     * 特定の検索キーを持つすべてのインデックスレコードを見つけるために
     * 必要なブロックアクセス数を見積もる。

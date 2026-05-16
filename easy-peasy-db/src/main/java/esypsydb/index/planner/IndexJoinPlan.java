@@ -29,6 +29,13 @@ public class IndexJoinPlan implements Plan {
         return new IndexJoinScan(s, idx, joinfield, ts);
     }
 
+    public String accessMethod() {
+        return "index-join(index=" + ii.indexName()
+            + ", field=" + ii.fieldName()
+            + ", outerField=" + joinfield
+            + ", type=" + ii.indexType() + ")";
+    }
+
     /*
      * 内部表を読むコスト + 内部表の各行ごとに、右表index を引くコスト
      * + 見つかった join結果件数ぶんの本体アクセス 

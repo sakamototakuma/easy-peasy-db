@@ -28,7 +28,13 @@ public class IndexSelectPlan implements Plan {
       // throws an exception if p is not a tableplan.
       TableScan ts = (TableScan) p.open();
       Index idx = ii.open();
-      return (Scan) (Object) new IndexSelectScan(ts, idx, val);
+      return new IndexSelectScan(ts, idx, val);
+   }
+
+   public String accessMethod() {
+      return "index-select(index=" + ii.indexName()
+            + ", field=" + ii.fieldName()
+            + ", type=" + ii.indexType() + ")";
    }
    
    public int blocksAccessed() {

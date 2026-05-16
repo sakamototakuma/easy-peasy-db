@@ -2,10 +2,11 @@ package esypsydb.index.query;
 
 import esypsydb.index.Index;
 import esypsydb.query.Constant;
+import esypsydb.query.Scan;
 import esypsydb.record.RID;
 import esypsydb.record.TableScan;
 
-public class IndexSelectScan {
+public class IndexSelectScan implements Scan {
     private TableScan ts;
     private Index idx;
     private Constant val;

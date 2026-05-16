@@ -18,6 +18,10 @@ public class SelectPlan implements Plan {
         return new SelectScan(s, pred);
     }
 
+    public String accessMethod() {
+        return "filter";
+    }
+
     @Override
     public int blocksAccessed() {
         return p.blocksAccessed();

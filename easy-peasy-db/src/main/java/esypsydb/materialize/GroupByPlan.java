@@ -34,6 +34,10 @@ public class GroupByPlan implements Plan {
         return new GroupByScan(s, groupfields, aggfns);
     }
 
+    public String accessMethod() {
+        return "group-by";
+    }
+
     public int blocksAccessed() {
         return p.blocksAccessed();
     }

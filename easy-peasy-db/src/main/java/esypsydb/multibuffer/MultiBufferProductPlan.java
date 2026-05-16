@@ -28,6 +28,10 @@ public class MultiBufferProductPlan implements Plan {
         return new MultiBufferProductScan(leftscan, filename, layout, tx);
     }
 
+    public String accessMethod() {
+        return "multi-buffer-product";
+    }
+
     /**
      * cost = B2 + (B1×B2/k)
      */

@@ -34,6 +34,10 @@ public class MergeJoinPlan implements Plan {
         return new MergeJoinScan(s1, s2, fldname1, fldname2);
     }
 
+    public String accessMethod() {
+        return "merge-join(" + fldname1 + "=" + fldname2 + ")";
+    }
+
     public int blocksAccessed() {
         return p1.blocksAccessed() + p2.blocksAccessed();
     }

@@ -31,6 +31,10 @@ public class SortPlan implements Plan {
         return new SortScan(runs, comp);
     }
 
+    public String accessMethod() {
+        return "external-sort";
+    }
+
     public int blocksAccessed() {
         Plan mp = new MaterializePlan(tx, p);
         return mp.blocksAccessed();

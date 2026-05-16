@@ -39,6 +39,14 @@ public class MaterializePlan implements Plan {
         return dest;
     }
 
+    public String scanName() {
+        return "TableScan";
+    }
+
+    public String accessMethod() {
+        return "materialize-to-temp-table";
+    }
+
     public int blocksAccessed() {
         Layout layout = new Layout(srcplan.schema());
         double rpb = (double) (tx.blockSize() / layout.slotSize());

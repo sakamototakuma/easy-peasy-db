@@ -207,9 +207,9 @@ id             name
 1              foo
 (1 rows)
 SQL> explain select id from t1 where id = 1;
-- ProjectPlan [blocks=1, rows=1]
-  - SelectPlan [blocks=1, rows=1]
-    - TablePlan [blocks=1, rows=1]
+- ProjectPlan [scan=ProjectScan, method=projection, blocks=1, rows=1]
+  - SelectPlan [scan=SelectScan, method=filter, blocks=1, rows=1]
+    - TablePlan [scan=TableScan, method=full-table-scan(table=t1), blocks=1, rows=1]
 Execution time: 0.812 ms (actual rows=1)
 SQL> exit
 bye.

@@ -23,6 +23,10 @@ public class TablePlan implements Plan {
         return (Scan) new TableScan(tx, tblname, layout);
     }
 
+    public String accessMethod() {
+        return "full-table-scan(table=" + tblname + ")";
+    }
+
     public int blocksAccessed() {
         return si.blocksAccessed();
     }

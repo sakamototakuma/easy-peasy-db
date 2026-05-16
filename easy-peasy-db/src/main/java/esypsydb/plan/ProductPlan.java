@@ -21,6 +21,10 @@ public class ProductPlan implements Plan {
         return new ProductScan(s1, s2);
     }
 
+    public String accessMethod() {
+        return "nested-loop-product";
+    }
+
     @Override
     public int blocksAccessed() {
         return p1.blocksAccessed() 
