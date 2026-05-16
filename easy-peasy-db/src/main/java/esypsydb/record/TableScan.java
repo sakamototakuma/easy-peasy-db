@@ -90,8 +90,14 @@ public class TableScan implements UpdateScan {
      *       ts.insert();          ← 先に空きスロットを確保
      *       ts.setString("col", value);
      *       ts.setInt("col2", value2);
+     * 
+     * テーブルが空じゃないかつ現在の RecordPageがすでに
+     * 最終 block ならそこから開始
      */
     public void insert() {
+        int lastBlkNum = tx.size(filename) - 1;
+        if (lastBlkNum >= 0 && rp.block().number() != lastBlkNum)
+            moveToBlock(lastBlkNum);
         currentslot = rp.insertAfter(currentslot);
         while (currentslot < 0) {
             if (atLastBlock())
