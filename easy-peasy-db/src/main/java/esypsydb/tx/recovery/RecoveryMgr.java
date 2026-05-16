@@ -69,8 +69,10 @@ public class RecoveryMgr {
      * @return
      */
     public int setInt(Buffer buff, int offset, int newval) {
-        int oldval = buff.contents().getInt(offset);
         BlockId blk = buff.block();
+        if (isTempBlock(blk))
+            return -1;
+        int oldval = buff.contents().getInt(offset);
         return SetIntRecord.writeToLog(lm, txnum, blk, offset, oldval);
     }
 
@@ -82,8 +84,10 @@ public class RecoveryMgr {
      * @return
      */
     public int setString(Buffer buff, int offset, String newval) {
-        String oldval = buff.contents().getString(offset);
         BlockId blk = buff.block();
+        if (isTempBlock(blk))
+            return -1;
+        String oldval = buff.contents().getString(offset);
         return SetStringRecord.writeToLog(lm, txnum, blk, offset, oldval);
     }
 
@@ -128,6 +132,10 @@ public class RecoveryMgr {
                     break;
             }
         }
+    }
+
+    private boolean isTempBlock(BlockId blk) {
+        return blk.fileName().startsWith("temp");
     }
 
 }
