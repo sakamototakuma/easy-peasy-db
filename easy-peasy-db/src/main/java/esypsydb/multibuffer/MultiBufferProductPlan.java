@@ -1,5 +1,7 @@
 package esypsydb.multibuffer;
 
+import java.util.List;
+
 import esypsydb.plan.*;
 import esypsydb.query.Scan;
 import esypsydb.query.UpdateScan;
@@ -8,24 +10,28 @@ import esypsydb.tx.Transaction;
 import esypsydb.materialize.*;
 
 public class MultiBufferProductPlan implements Plan {
-    private Plan lhs, rhs;
+    private Plan physicalOuter, physicalInner;
     private Transaction tx;
     private Schema schema = new Schema();
+    private boolean innerIsLogicalLhs;
+    private int estimatedBlocks;
 
     public MultiBufferProductPlan(Plan lhs, Plan rhs, Transaction tx) {
         this.tx = tx;
-        this.lhs = new MaterializePlan(tx, lhs);
-        this.rhs = rhs;
+        choosePhysicalOrder(lhs, rhs);
         schema.addAll(lhs.schema());
         schema.addAll(rhs.schema());
     }
 
     public Scan open() {
-        TempTable tt = copyRecordFrom(rhs);
+        TempTable tt = copyRecordFrom(physicalInner);
         String filename = tt.tablename() + ".tbl";
         Layout layout = tt.getLayout();
-        Scan leftscan = lhs.open();
-        return new MultiBufferProductScan(leftscan, filename, layout, tx);
+        Scan outerscan = physicalOuter.open();
+        Schema logicalLhs = innerIsLogicalLhs ? physicalInner.schema() : physicalOuter.schema();
+        Schema logicalRhs = innerIsLogicalLhs ? physicalOuter.schema() : physicalInner.schema();
+        return new MultiBufferProductScan(outerscan, filename, layout, tx,
+                                          logicalLhs, logicalRhs, innerIsLogicalLhs);
     }
 
     @Override
@@ -37,25 +43,32 @@ public class MultiBufferProductPlan implements Plan {
         return "multi-buffer-product";
     }
 
+    @Override
+    public List<String> extraInfoLines() {
+        String orientation = innerIsLogicalLhs
+            ? "Physical: outer=right input, inner=left input"
+            : "Physical: outer=left input, inner=right input";
+        return List.of(orientation);
+    }
+
     /**
      * cost = B2 + (B1×B2/k)
      */
     public int blocksAccessed() {
-        int avali = tx.availableBuffs();
-        int size = new MaterializePlan(tx, rhs).blocksAccessed();
-        int numchunks = (int) Math.ceil((double) size / avali);
-        return rhs.blocksAccessed() + (lhs.blocksAccessed() * numchunks);
+        return estimatedBlocks;
     }
 
     public int recordsOutput() {
-        return lhs.recordsOutput() * rhs.recordsOutput();
+        return physicalOuter.recordsOutput() * physicalInner.recordsOutput();
     }
 
     public int distinctValues(String fldname) {
-        if (lhs.schema().hasField(fldname))
-            return lhs.distinctValues(fldname);
+        Plan logicalLhs = innerIsLogicalLhs ? physicalInner : physicalOuter;
+        Plan logicalRhs = innerIsLogicalLhs ? physicalOuter : physicalInner;
+        if (logicalLhs.schema().hasField(fldname))
+            return logicalLhs.distinctValues(fldname);
         else
-            return rhs.distinctValues(fldname);
+            return logicalRhs.distinctValues(fldname);
     }
 
     public Schema schema() {
@@ -75,5 +88,38 @@ public class MultiBufferProductPlan implements Plan {
         src.close();
         dest.close();
         return tt;
+    }
+
+    private void choosePhysicalOrder(Plan lhs, Plan rhs) {
+        int forwardCost = productCost(lhs, rhs);
+        int swappedCost = productCost(rhs, lhs);
+        if (swappedCost < forwardCost) {
+            physicalOuter = new MaterializePlan(tx, rhs);
+            physicalInner = lhs;
+            innerIsLogicalLhs = true;
+            estimatedBlocks = swappedCost;
+        } else {
+            physicalOuter = new MaterializePlan(tx, lhs);
+            physicalInner = rhs;
+            innerIsLogicalLhs = false;
+            estimatedBlocks = forwardCost;
+        }
+    }
+
+    private int productCost(Plan outer, Plan inner) {
+        int innerSize = materializedBlocks(inner);
+        int numchunks = numChunks(innerSize);
+        return inner.blocksAccessed() + (materializedBlocks(outer) * numchunks);
+    }
+
+    private int materializedBlocks(Plan p) {
+        return new MaterializePlan(tx, p).blocksAccessed();
+    }
+
+    private int numChunks(int blocks) {
+        int available = tx.availableBuffs();
+        if (available <= 0)
+            return blocks;
+        return (int) Math.ceil((double) blocks / available);
     }
 }

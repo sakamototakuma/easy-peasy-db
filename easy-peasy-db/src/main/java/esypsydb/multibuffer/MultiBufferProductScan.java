@@ -2,6 +2,7 @@ package esypsydb.multibuffer;
 
 import esypsydb.query.*;
 import esypsydb.record.Layout;
+import esypsydb.record.Schema;
 import esypsydb.tx.Transaction;
 
 
@@ -11,12 +12,23 @@ public class MultiBufferProductScan implements Scan {
     private String filename;
     private Layout layout;
     private int chunksize, nextblknum, filesize;
+    private Schema logicalLhsSchema, logicalRhsSchema;
+    private boolean innerIsLogicalLhs;
 
-   public MultiBufferProductScan(Scan lhsscan, String filename, Layout layout, Transaction tx) {
+    public MultiBufferProductScan(Scan lhsscan, String filename, Layout layout, Transaction tx) {
+        this(lhsscan, filename, layout, tx, null, null, false);
+   }
+
+   public MultiBufferProductScan(Scan lhsscan, String filename, Layout layout, Transaction tx,
+                                 Schema logicalLhsSchema, Schema logicalRhsSchema,
+                                 boolean innerIsLogicalLhs) {
         this.lhsscan = lhsscan;
         this.filename = filename;
         this.layout = layout;
         this.tx = tx;
+        this.logicalLhsSchema = logicalLhsSchema;
+        this.logicalRhsSchema = logicalRhsSchema;
+        this.innerIsLogicalLhs = innerIsLogicalLhs;
       filesize = tx.size(filename);
         chunksize = BufferNeeds.bestFactor(tx.availableBuffs(), filesize);
         beforeFirst();
@@ -47,18 +59,20 @@ public class MultiBufferProductScan implements Scan {
    }
    
    public Constant getVal(String fldname) {
-      return prodscan.getVal(fldname);
+      return scanFor(fldname).getVal(fldname);
    }
 
    public int getInt(String fldname) {
-      return prodscan.getInt(fldname);
+      return scanFor(fldname).getInt(fldname);
    }
    
    public String getString(String fldname) {
-      return prodscan.getString(fldname);
+      return scanFor(fldname).getString(fldname);
    }
    
    public boolean hasField(String fldname) {
+      if (logicalLhsSchema != null && logicalRhsSchema != null)
+         return logicalLhsSchema.hasField(fldname) || logicalRhsSchema.hasField(fldname);
       return prodscan.hasField(fldname);
    }
 
@@ -79,5 +93,15 @@ public class MultiBufferProductScan implements Scan {
     prodscan = new ProductScan(lhsscan, rhsscan);
     nextblknum = end + 1;
     return true;
+   }
+
+   private Scan scanFor(String fldname) {
+      if (logicalLhsSchema == null)
+         return prodscan;
+      if (logicalLhsSchema.hasField(fldname))
+         return innerIsLogicalLhs ? rhsscan : lhsscan;
+      if (logicalRhsSchema.hasField(fldname))
+         return innerIsLogicalLhs ? lhsscan : rhsscan;
+      throw new RuntimeException("フィールドが見つかりません");
    }
 }

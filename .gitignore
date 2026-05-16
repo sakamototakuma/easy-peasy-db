@@ -9,6 +9,7 @@
 
 # Build output
 /easy-peasy-db/target/
+/easy-peasy-db/dependency-reduced-pom.xml
 
 # data
 /studentdb*/
@@ -20,3 +21,4 @@ data.sql
 
 # generated sample data (use samples/student/gen_data.py to regenerate)
 /samples/student/data.sql
+/samples/student/sqlexample.sql
