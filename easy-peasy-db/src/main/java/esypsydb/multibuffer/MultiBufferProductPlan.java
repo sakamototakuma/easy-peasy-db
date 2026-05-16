@@ -45,10 +45,9 @@ public class MultiBufferProductPlan implements Plan {
 
     @Override
     public List<String> extraInfoLines() {
-        String orientation = innerIsLogicalLhs
-            ? "Physical: outer=right input, inner=left input"
-            : "Physical: outer=left input, inner=right input";
-        return List.of(orientation);
+        if (!innerIsLogicalLhs)
+            return List.of();
+        return List.of("Physical: outer=right, inner=left");
     }
 
     /**
