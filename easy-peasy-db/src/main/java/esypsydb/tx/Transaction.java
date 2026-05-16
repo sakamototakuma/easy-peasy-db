@@ -34,7 +34,7 @@ public class Transaction {
     }
 
     public void rollback() {
-        recoveryMgr.commit();
+        recoveryMgr.rollback();
         concurMgr.release();
         mybuffers.unpinAll();
         System.out.println("transaction " + txnum + " rolled back");

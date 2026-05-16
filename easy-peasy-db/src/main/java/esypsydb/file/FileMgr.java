@@ -91,7 +91,7 @@ public class FileMgr {
             RandomAccessFile f = openFiles.get(filename);
             if (f == null) {
                 File dbTable = new File(dbDirectory, filename);
-                f = new RandomAccessFile(dbTable, "rws");
+                f = new RandomAccessFile(dbTable, "rw");
                 openFiles.put(filename, f);
             }
             return f;

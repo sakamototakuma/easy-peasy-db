@@ -13,6 +13,7 @@ public class Lexer {
         tok.ordinaryChar('.');
         tok.wordChars('_', '_');
         tok.lowerCaseMode(true);
+        tok.commentChar('-');
         nextToken();
     }
 
