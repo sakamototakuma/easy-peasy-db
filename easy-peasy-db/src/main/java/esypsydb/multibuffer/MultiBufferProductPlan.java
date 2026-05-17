@@ -90,19 +90,10 @@ public class MultiBufferProductPlan implements Plan {
     }
 
     private void choosePhysicalOrder(Plan lhs, Plan rhs) {
-        int forwardCost = productCost(lhs, rhs);
-        int swappedCost = productCost(rhs, lhs);
-        if (swappedCost < forwardCost) {
-            physicalOuter = new MaterializePlan(tx, rhs);
-            physicalInner = lhs;
-            innerIsLogicalLhs = true;
-            estimatedBlocks = swappedCost;
-        } else {
-            physicalOuter = new MaterializePlan(tx, lhs);
-            physicalInner = rhs;
-            innerIsLogicalLhs = false;
-            estimatedBlocks = forwardCost;
-        }
+        physicalOuter = new MaterializePlan(tx, lhs);
+        physicalInner = rhs;
+        innerIsLogicalLhs = false;
+        estimatedBlocks = productCost(lhs, rhs);
     }
 
     private int productCost(Plan outer, Plan inner) {
