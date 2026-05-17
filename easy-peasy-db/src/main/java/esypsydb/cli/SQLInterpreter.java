@@ -22,6 +22,7 @@ import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 
 import esypsydb.opt.HeuristicQueryPlanner;
+import esypsydb.opt.SelingerQueryPlanner;
 import esypsydb.parse.Parser;
 import esypsydb.parse.QueryData;
 import esypsydb.plan.*;
@@ -31,6 +32,19 @@ import esypsydb.server.EasyPeasyDB;
 import esypsydb.tx.Transaction;
 
 public class SQLInterpreter {
+
+    // ── session settings ───────────────────────────────────────
+    private enum PlannerType { HEURISTIC, SELINGER, BASIC }
+    private static PlannerType activePlanner = PlannerType.HEURISTIC;
+    private static boolean activeIndexEnabled = true;
+
+    private static QueryPlanner buildQueryPlanner(EasyPeasyDB db) {
+        return switch (activePlanner) {
+            case HEURISTIC -> new HeuristicQueryPlanner(db.mdMgr(), activeIndexEnabled);
+            case SELINGER  -> new SelingerQueryPlanner(db.mdMgr(), activeIndexEnabled);
+            case BASIC     -> new BasicQueryPlanner(db.mdMgr());
+        };
+    }
 
     private static Terminal terminal;
     private static PrintWriter out;
@@ -177,6 +191,14 @@ public class SQLInterpreter {
             executeCompare(db, stmt);
             return;
         }
+        if (lower.startsWith("indexcmp")) {
+            executeIndexCmp(db, stmt);
+            return;
+        }
+        if (lower.startsWith("set")) {
+            executeSet(planner, db, stmt);
+            return;
+        }
         Transaction tx = db.newTx();
         try {
             if (lower.startsWith("explain")) {
@@ -212,10 +234,87 @@ public class SQLInterpreter {
         out.println(bold("SQL: ") + sql);
         out.println(dim(repeat('═', w)));
         out.println();
-        runPlannerComparison(db, sql, new HeuristicQueryPlanner(db.mdMgr()), "Heuristic Planner  [optimizer ON]");
-        out.println();
-        runPlannerComparison(db, sql, new BasicQueryPlanner(db.mdMgr()), "Basic Planner      [optimizer OFF]");
+
+        // active planner (respects set planner / set index)
+        String activeLabel = String.format("★ Active  [%s, index=%s]",
+                activePlanner.name().toLowerCase(), activeIndexEnabled ? "on" : "off");
+        runPlannerComparison(db, sql, buildQueryPlanner(db), activeLabel);
+
+        // reference: the other 2 planners (index=on)
+        if (activePlanner != PlannerType.SELINGER) {
+            out.println();
+            runPlannerComparison(db, sql, new SelingerQueryPlanner(db.mdMgr()),  "  Selinger [DP,     index=on]");
+        }
+        if (activePlanner != PlannerType.HEURISTIC || !activeIndexEnabled) {
+            out.println();
+            runPlannerComparison(db, sql, new HeuristicQueryPlanner(db.mdMgr()), "  Heuristic[greedy, index=on]");
+        }
+        if (activePlanner != PlannerType.BASIC) {
+            out.println();
+            runPlannerComparison(db, sql, new BasicQueryPlanner(db.mdMgr()),     "  Basic    [no optimizer]   ");
+        }
         out.println(dim(repeat('═', w)));
+    }
+
+    private static void executeIndexCmp(EasyPeasyDB db, String stmt) {
+        String sql = stmt.replaceFirst("(?i)^indexcmp\\s+", "");
+        int w = Math.max(60, Math.min(terminal.getWidth() - 2, 100));
+        out.println();
+        out.println(bold("SQL: ") + sql);
+        out.println(dim(repeat('═', w)));
+        out.println();
+        runPlannerComparison(db, sql, new HeuristicQueryPlanner(db.mdMgr(), true),  "Heuristic Planner  [index ON ]");
+        out.println();
+        runPlannerComparison(db, sql, new HeuristicQueryPlanner(db.mdMgr(), false), "Heuristic Planner  [index OFF]");
+        out.println(dim(repeat('═', w)));
+    }
+
+    private static void executeSet(Planner planner, EasyPeasyDB db, String stmt) {
+        String[] parts = stmt.trim().toLowerCase().split("\\s+");
+        // "set" alone → show current settings
+        if (parts.length == 1) {
+            out.println(bold("Current settings:"));
+            out.println("  planner = " + cyan(activePlanner.name().toLowerCase()));
+            out.println("  index   = " + cyan(activeIndexEnabled ? "on" : "off"));
+            out.flush();
+            return;
+        }
+        if (parts.length < 3) {
+            out.println(red("Usage: set planner heuristic|selinger|basic  |  set index on|off"));
+            out.flush();
+            return;
+        }
+        String key = parts[1];
+        String val = parts[2];
+        switch (key) {
+            case "planner" -> {
+                PlannerType prev = activePlanner;
+                activePlanner = switch (val) {
+                    case "heuristic" -> PlannerType.HEURISTIC;
+                    case "selinger"  -> PlannerType.SELINGER;
+                    case "basic"     -> PlannerType.BASIC;
+                    default -> { out.println(red("Unknown planner: " + val + "  (heuristic|selinger|basic)")); yield prev; }
+                };
+                if (activePlanner != prev) {
+                    planner.setQueryPlanner(buildQueryPlanner(db));
+                    out.println(green("planner → " + activePlanner.name().toLowerCase()));
+                }
+            }
+            case "index" -> {
+                boolean prev = activeIndexEnabled;
+                activeIndexEnabled = switch (val) {
+                    case "on"  -> true;
+                    case "off" -> false;
+                    default -> { out.println(red("Unknown value: " + val + "  (on|off)")); yield prev; }
+                };
+                if (activeIndexEnabled != prev) {
+                    planner.setQueryPlanner(buildQueryPlanner(db));
+                    out.println(green("index → " + (activeIndexEnabled ? "on" : "off")));
+                }
+            }
+            default -> out.println(red("Unknown setting: " + key + "  (planner|index)"));
+        }
+        out.flush();
     }
 
     private static void runPlannerComparison(EasyPeasyDB db, String sql, QueryPlanner qp, String label) {
@@ -301,7 +400,11 @@ public class SQLInterpreter {
         out.println(bold("Commands:"));
         out.println("  " + cyan("select / insert / update / delete / create") + "  — standard SQL");
         out.println("  " + cyan("explain <select ...>") + "  — show query plan + timing");
-        out.println("  " + cyan("compare <select ...>") + "  — compare heuristic vs basic planner");
+        out.println("  " + cyan("compare <select ...>") + "  — compare selinger / heuristic / basic planner");
+        out.println("  " + cyan("indexcmp <select ...>") + "  — compare index ON vs index OFF");
+        out.println("  " + cyan("set planner heuristic|selinger|basic") + "  — switch active query planner");
+        out.println("  " + cyan("set index on|off") + "  — enable/disable index access");
+        out.println("  " + cyan("set") + "  — show current settings");
         out.println(dim("Keys: ↑↓ history  ←→ move cursor  Home/End  Ctrl+A/E  Ctrl+C cancel  Ctrl+D exit"));
         out.println(dim("Multi-line: press Enter to continue, end statement with ';' to execute."));
         out.flush();
@@ -363,7 +466,7 @@ public class SQLInterpreter {
         private static final Set<String> KW = new HashSet<>(Arrays.asList(
                 "select", "from", "where", "and", "or", "not", "join", "on", "as",
                 "insert", "into", "values", "update", "set", "delete",
-                "create", "table", "index", "view", "explain", "compare",
+                "create", "table", "index", "view", "explain", "compare", "indexcmp", "set",
                 "order", "by", "group", "having", "distinct", "int", "varchar"));
 
         @Override

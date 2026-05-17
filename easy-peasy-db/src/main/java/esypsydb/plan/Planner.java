@@ -12,6 +12,14 @@ public class Planner {
         this.uplanner = uplanner;
     }
 
+    public void setQueryPlanner(QueryPlanner qp) {
+        this.qPlanner = qp;
+    }
+
+    public QueryPlanner getQueryPlanner() {
+        return qPlanner;
+    }
+
     public Plan createQueryPlan(String cmd, Transaction tx) {
         Parser parser = new Parser(cmd);
         QueryData data = parser.query(); // クエリをパース

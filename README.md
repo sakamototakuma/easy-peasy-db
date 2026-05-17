@@ -29,6 +29,7 @@ JDBC クライアントから利用することを想定し、DBMS の内部実�
 - テーブル作成
 - `insert / select / update / delete`
 - `explain` 句（プラン木 + 実行時間の表示）
+- `compare` 句（HeuristicQueryPlanner と BasicQueryPlanner の実行計画・性能を並べて比較）
 - 対話的 SQL 実行 (`SQLInterpreter` REPL)
 - インデックス
 - B+Tree ベースのデータ構造
@@ -100,7 +101,8 @@ EasyPeasyDB は専用のブロックデバイスやカスタムファイルシ�
 
 - DB ディレクトリ (接続 URL で指定) 配下に、テーブル毎に1つのファイルが作成されます
 - 各ファイルは `BLOCK_SIZE` バイトの固定長ブロックの配列として扱われます ([FileMgr.java](easy-peasy-db/src/main/java/esypsydb/file/FileMgr.java))
-- `RandomAccessFile` を `"rws"` モードで開いているため、**書き込みは毎回 OS 経由でディスクに同期**されます (fsync 相当)。耐久性優先で、スループットは控えめです
+- `RandomAccessFile` を `"rw"` モードで開き、**書き込みは OS のページキャッシュへ積む**形を取ります。fsync はコミット時のログ flush (`lm.flush`) のみで行い、実際の DB に近い WAL ベースの耐久性モデルを採用しています
+- セッション終了時に `checkpoint()` を呼び、全 dirty バッファをフラッシュした上で CHECKPOINT レコードをログに書きます。次回起動時のリカバリはこの checkpoint まで遡るだけで完了します
 - 一時テーブル (`temp*`) は起動時に削除され、永続化対象外です
 
 したがって I/O 性能は、動作しているマシンのディスク (SSD / HDD) 特性とファイルシステムに直接依存します。
@@ -150,7 +152,7 @@ mvn site
 
 ## SQL Interpreter (REPL)
 
-対話的にSQLを実行するためのREPLを `esypsydb.cli.SQLInterpreter` として提供しています。
+対話的にSQLを実行するためのREPLを `esypsydb.cli.SQLInterpreter` として提供しています。[JLine3](https://github.com/jline/jline3) を使用しており、矢印キーでのカーソル移動・履歴操作（`~/.easypeasydb_history`）・SQL キーワードのシンタックスハイライトに対応しています。
 
 ### Quick Start
 
@@ -187,43 +189,8 @@ cd ..
 | DML | `insert into t(id, name) values(1, 'foo');`<br>`update t set name = 'bar' where id = 1;`<br>`delete from t where id = 1;` |
 | Query | `select id, name from t where id = 1;` |
 | Explain | `explain select id from t where id = 1;` |
-
-### セッション例
-
-```text
-$ ./start-cli.sh
-EasyPeasyDB SQL Interpreter (db=studentdb)
-Statements end with ';'. Type 'help' for usage, 'exit' to quit.
-SQL> create table t1(
- ... id int,
- ... name varchar(10)
- ... );
-0 rows affected.
-SQL> insert into t1(id, name) values(1, 'foo');
-1 rows affected.
-SQL> select id, name from t1;
-id             name
-------------------------------
-1              foo
-(1 rows)
-SQL> explain select id from t1 where id = 1;
-- ProjectPlan [scan=ProjectScan, method=projection, blocks=1, rows=1]
-  - SelectPlan [scan=SelectScan, method=filter, blocks=1, rows=1]
-    - TablePlan [scan=TableScan, method=full-table-scan(table=t1), blocks=1, rows=1]
-Execution time: 0.812 ms (actual rows=1)
-SQL> exit
-bye.
-```
-
-`explain` プレフィックスで `Planner.explainQuery` を呼び、プラン木のコスト見積もりと実測の実行時間を出力します
-
-### スクリプト実行
-
-標準入力リダイレクトでバッチ実行できます。
-
-```bash
-./start-cli.sh < schema.sql
-```
+| Compare | `compare select id from t where id = 1;` |
+| IndexCmp | `indexcmp select id from t where id = 1;` |
 
 ### サンプルデータ
 
@@ -263,7 +230,6 @@ table_bytes       = table_blocks × BLOCK_SIZE
 ```
 
 `student` (slot=30B、136 rows/block) の例：200K 行 → 約 1471 block → **5.7 MiB**。バッファプール 4 MiB を超えるので I/O が発生し、index/multibuffer の挙動を観察できます。
-
 ---
 
 ## JDBC Notes (Current Implementation)

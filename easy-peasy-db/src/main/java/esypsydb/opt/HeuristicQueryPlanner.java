@@ -12,10 +12,16 @@ import esypsydb.tx.Transaction;
 
 public class HeuristicQueryPlanner implements QueryPlanner {
     private final MetadataMgr mdm;
+    private final boolean useIndex;
     private Collection<TablePlanner> tableplanners = new ArrayList<TablePlanner>();
 
     public HeuristicQueryPlanner(MetadataMgr mdm) {
+        this(mdm, true);
+    }
+
+    public HeuristicQueryPlanner(MetadataMgr mdm, boolean useIndex) {
         this.mdm = mdm;
+        this.useIndex = useIndex;
     }
 
     @Override
@@ -24,7 +30,7 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 
         // Step1: FROM句の各テーブルのTablePlannerオブジェクトを作成
         for (String tblname : data.tables()) {
-            TablePlanner tp = new TablePlanner(tblname, data.pred(), tx, mdm);
+            TablePlanner tp = new TablePlanner(tblname, data.pred(), tx, mdm, useIndex);
             tableplanners.add(tp);
         }
 

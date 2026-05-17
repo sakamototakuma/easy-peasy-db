@@ -18,10 +18,16 @@ public class TablePlanner {
     private Schema myschema;
     private Map<String, IndexInfo> indexes;
     private Transaction tx;
+    private boolean useIndex;
 
     public TablePlanner(String tblname, Predicate mypred, Transaction tx, MetadataMgr mdm) {
+        this(tblname, mypred, tx, mdm, true);
+    }
+
+    public TablePlanner(String tblname, Predicate mypred, Transaction tx, MetadataMgr mdm, boolean useIndex) {
         this.mypred = mypred;
         this.tx = tx;
+        this.useIndex = useIndex;
         myplan = new TablePlan(tx, tblname, mdm);
         myschema = myplan.schema();
         indexes = mdm.getIndexInfo(tblname, tx);
@@ -72,6 +78,7 @@ public class TablePlanner {
     }
 
     private Plan makeIndexSelect() {
+        if (!useIndex) return null;
         for (String fldname : indexes.keySet()) {
             Constant val = mypred.equatesWithConstant(fldname);
             if (val != null) {
@@ -92,6 +99,7 @@ public class TablePlanner {
      * @return
      */
     private Plan makeIndexJoin(Plan current, Schema currsch) {
+        if (!useIndex) return null;
         for (String fldname : indexes.keySet()) {
             String outerfield = mypred.equatesWithField(fldname);
             if (outerfield != null && currsch.hasField(outerfield)) {
