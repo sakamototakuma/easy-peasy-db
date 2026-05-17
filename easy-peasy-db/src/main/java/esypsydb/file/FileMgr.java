@@ -79,6 +79,14 @@ public class FileMgr {
         }
     }
 
+    public synchronized void closeFile(String filename) {
+        RandomAccessFile f = openFiles.remove(filename);
+        if (f != null) {
+            try { f.close(); } catch (IOException e) { /* ignore */ }
+        }
+        new File(dbDirectory, filename).delete();
+    }
+
     public boolean isNew() {
         return isNew;
     }

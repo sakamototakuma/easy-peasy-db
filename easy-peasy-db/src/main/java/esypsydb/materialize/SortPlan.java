@@ -114,6 +114,8 @@ public class SortPlan implements Plan {
             TempTable p1 = runs.remove(0);
             TempTable p2 = runs.remove(0);
             result.add(mergeTwoRuns(p1, p2));
+            p1.close();
+            p2.close();
         }
         if (runs.size() == 1)
             result.add(runs.get(0));

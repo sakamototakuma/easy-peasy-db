@@ -31,6 +31,10 @@ public class TempTable {
     /*
      * 一意な名前tempNをつける
      */
+    public void close() {
+        tx.closeFile(tblname + ".tbl");
+    }
+
     public static synchronized String nextTableNum() {
         nextTableNum++;
         return "temp" + nextTableNum;

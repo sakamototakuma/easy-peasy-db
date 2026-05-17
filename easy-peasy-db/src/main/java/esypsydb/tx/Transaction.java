@@ -105,6 +105,10 @@ public class Transaction {
         return fm.append(filename);
     }
 
+    public void closeFile(String filename) {
+        fm.closeFile(filename);
+    }
+
     public int blockSize() {
         return fm.blockSize();
     }

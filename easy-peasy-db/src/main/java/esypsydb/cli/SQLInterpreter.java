@@ -218,12 +218,16 @@ public class SQLInterpreter {
                 }
                 tx.commit();
             }
-        } catch (RuntimeException e) {
-            tx.rollback();
+        } catch (Throwable e) {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
             out.println(red("Error: " + msg));
             e.printStackTrace(out);
             out.flush();
+            try { tx.rollback(); } catch (Throwable re) {
+                out.println(red("Rollback failed: " + re.getClass().getName()));
+                re.printStackTrace(out);
+                out.flush();
+            }
         }
     }
 
@@ -341,11 +345,11 @@ public class SQLInterpreter {
                     "Execution time: %d ms  |  actual rows=%-6d  |  est. blocks=%d",
                     ms, rows, plan.blocksAccessed())));
             tx.commit();
-        } catch (RuntimeException e) {
-            tx.rollback();
+        } catch (Throwable e) {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
             out.println(red("Error: " + msg));
             e.printStackTrace(out);
+            try { tx.rollback(); } catch (Throwable re) { /* suppress */ }
             out.flush();
         }
     }

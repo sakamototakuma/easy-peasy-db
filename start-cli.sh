@@ -6,10 +6,7 @@ PROJ="$SCRIPT_DIR/easy-peasy-db"
 CLASSES="$PROJ/target/classes"
 DEPS="$PROJ/target/dependency"
 
-if [ ! -d "$CLASSES" ]; then
-    echo "Compiling..." >&2
-    (cd "$PROJ" && mvn -q compile)
-fi
+(cd "$PROJ" && mvn -q compile)
 
 if [ ! -d "$DEPS" ]; then
     echo "Fetching dependencies..." >&2

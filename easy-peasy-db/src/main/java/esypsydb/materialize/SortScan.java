@@ -11,13 +11,16 @@ public class SortScan implements Scan {
     private RecordComparator comp;
     private boolean hasmore1, hasmore2=false;
     private List<RID> savedposition;
+    private TempTable t1, t2 = null;
 
     public SortScan(List<TempTable> runs, RecordComparator comp) {
         this.comp = comp;
-        s1 = (UpdateScan) runs.get(0).open();
+        t1 = runs.get(0);
+        s1 = (UpdateScan) t1.open();
         hasmore1 = s1.next();
         if (runs.size() > 1) {
-            s2 = (UpdateScan) runs.get(1).open();
+            t2 = runs.get(1);
+            s2 = (UpdateScan) t2.open();
             hasmore2 = s2.next();
         }
     }
@@ -59,10 +62,11 @@ public class SortScan implements Scan {
     }
 
     public void close() {
-      s1.close();
-      if (s2 != null)
-         s2.close();
-   }
+        s1.close();
+        if (s2 != null) s2.close();
+        t1.close();
+        if (t2 != null) t2.close();
+    }
    
    public Constant getVal(String fldname) {
       return currentscan.getVal(fldname);
