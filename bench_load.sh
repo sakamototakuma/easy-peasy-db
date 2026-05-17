@@ -4,8 +4,9 @@
 #
 # 使い方:
 #   ./bench_load.sh                          # bench-medium / dbname=benchdb
-#   ./bench_load.sh bench-small mybench
-#   ./bench_load.sh bench-large hugebench
+#   ./bench_load.sh bench-small smallbenchdb
+#   ./bench_load.sh bench-medium mediumbenchdb
+#   ./bench_load.sh bench-large largebenchdb
 #
 set -eu
 
