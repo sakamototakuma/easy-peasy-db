@@ -84,21 +84,45 @@ public class SortPlan implements Plan {
         src.beforeFirst();
         if (!src.next())
             return temps;
-        TempTable currenttemp = new TempTable(tx, sch);
-        temps.add(currenttemp);
-        UpdateScan currentscan = currenttemp.open();
-
-        while (copy(src, currentscan)) {
-            if (comp.compare(src, currentscan) < 0) {
-                // 新しいrunを始める
-                currentscan.close();
-                currenttemp = new TempTable(tx, sch);
-                temps.add(currenttemp);
-                currentscan = (UpdateScan) currenttemp.open();
+            
+        final int MAX_RECORDS = 10000;
+        boolean hasmore = true;
+        
+        while (hasmore) {
+            TempTable currenttemp = new TempTable(tx, sch);
+            temps.add(currenttemp);
+            UpdateScan currentscan = (UpdateScan) currenttemp.open();
+            
+            List<Map<String, Constant>> chunk = new ArrayList<Map<String, Constant>>();
+            int count = 0;
+            while (hasmore && count < MAX_RECORDS) {
+                Map<String, Constant> rec = new HashMap<String, Constant>();
+                for (String fldname : sch.fields())
+                    rec.put(fldname, src.getVal(fldname));
+                chunk.add(rec);
+                count++;
+                hasmore = src.next();
             }
+            
+            chunk.sort((r1, r2) -> {
+                for (String fldname : sortfields) {
+                    Constant val1 = r1.get(fldname);
+                    Constant val2 = r2.get(fldname);
+                    int result = val1.compareTo(val2);
+                    if (result != 0)
+                        return result;
+                }
+                return 0;
+            });
+            
+            for (Map<String, Constant> rec : chunk) {
+                currentscan.insert();
+                for (String fldname : sch.fields())
+                    currentscan.setVal(fldname, rec.get(fldname));
+            }
+            currentscan.close();
         }
-
-        currentscan.close();
+        
         return temps;
     }
 
@@ -140,7 +164,7 @@ public class SortPlan implements Plan {
         
         // hasmore2だけがなくなったら、hasmore1を全部書き写す
         if (hasmore1)
-            while (hasmore2)
+            while (hasmore1)
                 hasmore1 = copy(src1, dest);
         // hasmore1だけがなくなったら、hasmore2を全部書き写す
         else

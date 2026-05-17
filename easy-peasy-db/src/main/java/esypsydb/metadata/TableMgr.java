@@ -10,7 +10,7 @@ import java.util.*;
  * システムテーブルを使用してメタデータを保持
  */
 public class TableMgr {
-    public static final int MAX_NAME = 16; 
+    public static final int MAX_NAME = 32; 
     private Layout tcatLayout, fcatLayout;
 
     /**
