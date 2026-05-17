@@ -23,15 +23,14 @@ public class MultiBufferProductPlan implements Plan {
         schema.addAll(rhs.schema());
     }
 
+    // ttのlayout, filenameを渡すだけじゃTemptableを知らないので、そのものを渡す
     public Scan open() {
         TempTable tt = copyRecordFrom(physicalInner);
-        String filename = tt.tablename() + ".tbl";
-        Layout layout = tt.getLayout();
         Scan outerscan = physicalOuter.open();
         Schema logicalLhs = innerIsLogicalLhs ? physicalInner.schema() : physicalOuter.schema();
         Schema logicalRhs = innerIsLogicalLhs ? physicalOuter.schema() : physicalInner.schema();
-        return new MultiBufferProductScan(outerscan, filename, layout, tx,
-                                          logicalLhs, logicalRhs, innerIsLogicalLhs);
+        return new MultiBufferProductScan(outerscan, tt, tx,
+                logicalLhs, logicalRhs, innerIsLogicalLhs);
     }
 
     @Override

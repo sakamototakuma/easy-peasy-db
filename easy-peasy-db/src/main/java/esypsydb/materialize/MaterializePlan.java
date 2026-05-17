@@ -36,7 +36,8 @@ public class MaterializePlan implements Plan {
         }
         src.close();            // srcplanは閉じる
         dest.beforeFirst();
-        return dest;
+        // TempTable を閉じられるよう MaterializeScan でラップ
+        return new MaterializeScan(dest, temp);
     }
 
     public String scanName() {
