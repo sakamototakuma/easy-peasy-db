@@ -5,6 +5,7 @@ import esypsydb.index.query.IndexJoinScan;
 import esypsydb.metadata.IndexInfo;
 import esypsydb.plan.Plan;
 import esypsydb.query.*;
+import esypsydb.query.UpdateScan;
 import esypsydb.record.*;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class IndexJoinPlan implements Plan {
 
     public Scan open() {
         Scan s = p1.open();
-        TableScan ts = (TableScan) p2.open();
+        UpdateScan ts = (UpdateScan) p2.open();
         Index idx = ii.open();
         return new IndexJoinScan(s, idx, joinfield, ts);
     }

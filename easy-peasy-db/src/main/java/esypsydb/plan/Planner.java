@@ -53,19 +53,10 @@ public class Planner {
             return PlanFormatter.formatAnalyze(root, planNs, execNs);
         } else {
             StringBuilder sb = new StringBuilder(PlanFormatter.format(plan));
-            long start = System.nanoTime();
-            int rows = 0;
-            esypsydb.query.Scan s = plan.open();
-            try {
-                while (s.next())
-                    rows++;
-            } finally {
-                s.close();
-            }
-            long ms = (System.nanoTime() - start) / 1_000_000;
+            long ms = planNs / 1_000_000;
             sb.append(String.format(
-                    "Execution time: %d ms  |  actual rows=%-6d  |  est. blocks=%d%n",
-                    ms, rows, plan.blocksAccessed()));
+                    "Planning time: %d ms  |  est. blocks=%d%n",
+                    ms, plan.blocksAccessed()));
             return sb.toString();
         }
     }

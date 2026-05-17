@@ -2,16 +2,15 @@ package esypsydb.index.query;
 
 import esypsydb.index.Index;
 import esypsydb.query.*;
-import esypsydb.record.TableScan;
 
 
 public class IndexJoinScan implements Scan {
     private Scan lhs;
     private Index idx;
     private String joinfield;
-    private TableScan rhs;
+    private UpdateScan rhs;
 
-    public IndexJoinScan(Scan lhs, Index idx, String joinfield, TableScan rhs) {
+    public IndexJoinScan(Scan lhs, Index idx, String joinfield, UpdateScan rhs) {
         this.lhs = lhs;
         this.idx  = idx;
         this.joinfield = joinfield;

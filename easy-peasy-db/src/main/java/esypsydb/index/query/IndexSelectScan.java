@@ -3,15 +3,15 @@ package esypsydb.index.query;
 import esypsydb.index.Index;
 import esypsydb.query.Constant;
 import esypsydb.query.Scan;
+import esypsydb.query.UpdateScan;
 import esypsydb.record.RID;
-import esypsydb.record.TableScan;
 
 public class IndexSelectScan implements Scan {
-    private TableScan ts;
+    private UpdateScan ts;
     private Index idx;
     private Constant val;
 
-    public IndexSelectScan(TableScan ts, Index idx, Constant val) {
+    public IndexSelectScan(UpdateScan ts, Index idx, Constant val) {
         this.ts = ts;
         this.idx = idx;
         this.val = val;

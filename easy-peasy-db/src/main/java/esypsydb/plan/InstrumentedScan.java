@@ -2,12 +2,14 @@ package esypsydb.plan;
 
 import esypsydb.query.Constant;
 import esypsydb.query.Scan;
+import esypsydb.query.UpdateScan;
+import esypsydb.record.RID;
 
 /**
  * Scan をラップし、行数とタイミングを計測する。
  * PostgreSQL の EXPLAIN ANALYZE でノードごとの actual time / actual rows を出すために使用。
  */
-public class InstrumentedScan implements Scan {
+public class InstrumentedScan implements UpdateScan {
     private final Scan wrapped;
     private long accumulatedNs = 0;
     private long firstRowNs    = -1;
@@ -72,6 +74,20 @@ public class InstrumentedScan implements Scan {
             totalNs = accumulatedNs;
         wrapped.close();
     }
+
+    // ─── UpdateScan 委譲 ───
+
+    private UpdateScan asUpdate() {
+        return (UpdateScan) wrapped;
+    }
+
+    @Override public void insert()                          { asUpdate().insert(); }
+    @Override public void delete()                          { asUpdate().delete(); }
+    @Override public void setInt(String fld, int val)       { asUpdate().setInt(fld, val); }
+    @Override public void setString(String fld, String val) { asUpdate().setString(fld, val); }
+    @Override public void setVal(String fld, Constant val)  { asUpdate().setVal(fld, val); }
+    @Override public void moveToRid(RID rid)                { asUpdate().moveToRid(rid); }
+    @Override public RID  getRid()                          { return asUpdate().getRid(); }
 
     // ─── 計測結果アクセサ ───
 

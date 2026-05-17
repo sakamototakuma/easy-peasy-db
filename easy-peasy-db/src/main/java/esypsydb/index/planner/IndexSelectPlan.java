@@ -6,8 +6,8 @@ import esypsydb.metadata.IndexInfo;
 import esypsydb.plan.Plan;
 import esypsydb.query.Constant;
 import esypsydb.query.Scan;
+import esypsydb.query.UpdateScan;
 import esypsydb.record.Schema;
-import esypsydb.record.TableScan;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ public class IndexSelectPlan implements Plan {
     */
    public Scan open() {
       // throws an exception if p is not a tableplan.
-      TableScan ts = (TableScan) p.open();
+      UpdateScan ts = (UpdateScan) p.open();
       Index idx = ii.open();
       return new IndexSelectScan(ts, idx, val);
    }
