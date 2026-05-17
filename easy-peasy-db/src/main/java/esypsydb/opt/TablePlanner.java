@@ -4,6 +4,7 @@ import esypsydb.query.*;
 import esypsydb.record.Schema;
 import esypsydb.tx.Transaction;
 import esypsydb.index.planner.*;
+import esypsydb.materialize.HashJoinPlan;
 import esypsydb.metadata.IndexInfo;
 import esypsydb.metadata.MetadataMgr;
 import esypsydb.multibuffer.MultiBufferProductPlan;
@@ -60,7 +61,11 @@ public class TablePlanner {
 
         if (joinpred == null)
             return null;
-        Plan p = makeIndexJoin(current, currsch);
+        // HashJoin を優先: 統計モデルが外側行数を過小評価するため
+        // IndexJoin の「外側×ランダム検索」コストが不正確になる。
+        Plan p = makeHashJoin(current, currsch);
+        if (p == null)
+            p = makeIndexJoin(current, currsch);
         if (p == null)
             p = makeProductJoin(current, currsch);
         return p;
@@ -106,6 +111,18 @@ public class TablePlanner {
                 IndexInfo ii = indexes.get(fldname);
                 Plan p = new IndexJoinPlan(current, myplan, ii, outerfield);
                 p = addSelectPred(p);
+                return addJoinPred(p, currsch);
+            }
+        }
+        return null;
+    }
+
+    private Plan makeHashJoin(Plan current, Schema currsch) {
+        for (String fldname : myschema.fields()) {
+            String outerFld = mypred.equatesWithField(fldname);
+            if (outerFld != null && currsch.hasField(outerFld)) {
+                Plan rhs = addSelectPred(myplan);
+                Plan p = new HashJoinPlan(current, rhs, outerFld, fldname, tx);
                 return addJoinPred(p, currsch);
             }
         }
