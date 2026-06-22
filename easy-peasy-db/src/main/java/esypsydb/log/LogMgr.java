@@ -81,6 +81,7 @@ public class LogMgr {
     //現在メモリにあるブロックをディスクのブロックに書き出す
     public void flush() {
         fm.write(currentblk, logpage);
+        fm.fsync(logfile);
         lastSavedLSN = latestLSN;       // LSNの更新
     }
     

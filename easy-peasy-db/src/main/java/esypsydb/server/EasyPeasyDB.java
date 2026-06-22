@@ -68,6 +68,7 @@ public class EasyPeasyDB {
 
     public void checkpoint() {
         bm.flushAllDirty();
+        fm.fsyncAll();
         int lsn = CheckpointRecord.writeToLog(lm);
         lm.flush(lsn);
     }

@@ -107,6 +107,26 @@ public class FileMgr {
         return blocksize;
     }
 
+    public synchronized void fsync(String filename) {
+        try {
+            RandomAccessFile f = getFile(filename);
+            f.getChannel().force(true);
+        } catch (IOException e) {
+            throw new RuntimeException("cannot fsync" + filename);
+        }
+    }
+
+    public synchronized void fsyncAll() {
+        for (RandomAccessFile f : openFiles.values()) {
+            try {
+                f.getChannel().force(true);
+            } catch (IOException e) {
+                throw new RuntimeException("cannot fsync data files");
+            }
+        }
+    }
+
+
     private RandomAccessFile getFile(String filename) throws IOException {
         RandomAccessFile f = openFiles.get(filename);
         if (f == null) {
