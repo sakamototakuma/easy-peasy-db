@@ -3,6 +3,7 @@ package esypsydb.metadata;
 import java.util.*;
 import esypsydb.tx.Transaction;
 import esypsydb.record.*;
+import esypsydb.query.Constant;
 
 public class StatMgr {
        private TableMgr tblMgr;
@@ -54,16 +55,28 @@ public class StatMgr {
       tcat.close();
    }
    
-   private synchronized StatInfo calcTableStats(String tblname, 
+   private synchronized StatInfo calcTableStats(String tblname,
                               Layout layout, Transaction tx) {
       int numRecs = 0;
       int numblocks = 0;
+      Schema sch = layout.schema();
+      // フィールドごとの出現値のHashSetを持ち、走査後distinct = HashSet.size()
+      Map<String, Set<Constant>> seen = new HashMap<>();
+      for (String fld : sch.fields())
+         seen.put(fld, new HashSet<>());
       TableScan ts = new TableScan(tx, tblname, layout);
       while (ts.next()) {
          numRecs++;
          numblocks = ts.getRid().blockNumber() + 1;
+         for (String fld : sch.fields()) {
+            Constant val = ts.getVal(fld);
+            seen.get(fld).add(val);
+         }
       }
       ts.close();
-      return new StatInfo(numblocks, numRecs);
+      Map<String, Integer> distinctMap = new HashMap<>();
+      for (Map.Entry<String, Set<Constant>> e : seen.entrySet())
+         distinctMap.put(e.getKey(), e.getValue().size());
+      return new StatInfo(numblocks, numRecs, distinctMap);
    }
 }
