@@ -117,8 +117,8 @@ EasyPeasyDB は専用のブロックデバイスやカスタムファイルシ�
 
 ### Memory
 
-- バッファプール使用量 = `BLOCK_SIZE × BUFFER_SIZE` = **4 KiB × 1024 = 4 MiB**
-- ページは `ByteBuffer.allocateDirect()` で確保されるため、**JVM ヒープ外のダイレクトメモリ領域**に載ります ([Page.java](easy-peasy-db/src/main/java/esypsydb/file/Page.java))
+- バッファプール使用量 = `BLOCK_SIZE × BUFFER_SIZE` = 4 KiB × 1024 = 4 MiB
+- ページは `ByteBuffer.allocateDirect()` で確保されるため、JVM ヒープ外のダイレクトメモリ領域に載ります ([Page.java](easy-peasy-db/src/main/java/esypsydb/file/Page.java))
 - 上記に加え、ログバッファ・トランザクション状態・メタデータ等で追加の JVM ヒープを使用します
 
 ---
@@ -130,7 +130,7 @@ EasyPeasyDB は専用のブロックデバイスやカスタムファイルシ�
 - JDK 21
 - Maven 3.9+
 
-> `pom.xml` の `maven-compiler-plugin` は `source/target = 21` です。
+> `pom.xml` の `maven-compiler-plugin` は `source/target = 21` .
 
 ### Build & Test
 

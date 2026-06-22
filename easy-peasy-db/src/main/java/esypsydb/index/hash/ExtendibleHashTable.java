@@ -28,11 +28,11 @@ public class ExtendibleHashTable {
     private final Layout layout;
     private final String keyField;
 
-    // ─── ディレクトリ (in-memory) ───
+    // ディレクトリ (in-memory)
     private int[] directory;
     private int globalDepth;
 
-    // ─── プローブ用カーソル ───
+    // プローブ用
     private HashBucketPage currentBucket;
     private int currentSlot;
     private Constant searchKey;
