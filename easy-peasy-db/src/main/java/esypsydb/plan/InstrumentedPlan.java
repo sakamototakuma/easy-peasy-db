@@ -1,5 +1,6 @@
 package esypsydb.plan;
 
+import esypsydb.materialize.MergeJoinPlan;
 import esypsydb.query.Scan;
 import esypsydb.record.Schema;
 
@@ -28,6 +29,10 @@ public class InstrumentedPlan implements Plan {
      */
     public static InstrumentedPlan instrument(Plan root) {
         InstrumentedPlan wrapper = new InstrumentedPlan(root);
+
+        // MergeJoinPlan は内部の SortPlan を具象 SortScan としてopen()するため
+        if (root instanceof MergeJoinPlan)
+            return wrapper;
 
         Class<?> c = root.getClass();
         while (c != null && c != Object.class) {

@@ -1,7 +1,6 @@
 package esypsydb.materialize;
 
 import esypsydb.query.Constant;
-import esypsydb.query.Scan;
 import esypsydb.query.UpdateScan;
 import esypsydb.record.RID;
 

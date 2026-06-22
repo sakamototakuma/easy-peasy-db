@@ -11,6 +11,7 @@ public class SortScan implements Scan {
     private RecordComparator comp;
     private boolean hasmore1, hasmore2=false;
     private List<RID> savedposition;
+    private boolean savedHasmore1, savedHasmore2;
     private TempTable t1, t2 = null;
 
     public SortScan(List<TempTable> runs, RecordComparator comp) {
@@ -89,17 +90,25 @@ public class SortScan implements Scan {
     * so that it can be restored at a later time.
     */
    public void savePosition() {
-      RID rid1 = s1.getRid();
-      RID rid2 = (s2 == null) ? null : s2.getRid();
-      savedposition = Arrays.asList(rid1,rid2);
+      RID rid1 = hasmore1 ? s1.getRid() : null;
+      RID rid2 = (s2 != null && hasmore2) ? s2.getRid() : null;
+      savedposition = Arrays.asList(rid1, rid2);
+      savedHasmore1 = hasmore1;
+      savedHasmore2 = hasmore2;
    }
-   
+
    // 前回保存した位置に戻す
+   // currentscan を null に戻すと -> 直後の next()がどのrunも先に進めず、
+   // 保存時にカレントだったレコードを再び先頭として選び直すようにする
    public void restorePosition() {
       RID rid1 = savedposition.get(0);
       RID rid2 = savedposition.get(1);
-      s1.moveToRid(rid1);
+      if (rid1 != null)
+         s1.moveToRid(rid1);
       if (rid2 != null)
          s2.moveToRid(rid2);
+      hasmore1 = savedHasmore1;
+      hasmore2 = savedHasmore2;
+      currentscan = null;
    }
 }

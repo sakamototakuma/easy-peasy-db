@@ -6,8 +6,8 @@ import esypsydb.query.UpdateScan;
 import esypsydb.record.RID;
 
 /**
- * Scan をラップし、行数とタイミングを計測する。
- * PostgreSQL の EXPLAIN ANALYZE でノードごとの actual time / actual rows を出すために使用。
+ * Scanをラップし、行数とタイミングを計測
+ * PostgreSQL の EXPLAIN ANALYZE でノードごとの actual time / actual rows を出すため
  */
 public class InstrumentedScan implements UpdateScan {
     private final Scan wrapped;
@@ -75,7 +75,7 @@ public class InstrumentedScan implements UpdateScan {
         wrapped.close();
     }
 
-    // ─── UpdateScan 委譲 ───
+    // UpdateScan 委譲
 
     private UpdateScan asUpdate() {
         return (UpdateScan) wrapped;
@@ -88,8 +88,6 @@ public class InstrumentedScan implements UpdateScan {
     @Override public void setVal(String fld, Constant val)  { asUpdate().setVal(fld, val); }
     @Override public void moveToRid(RID rid)                { asUpdate().moveToRid(rid); }
     @Override public RID  getRid()                          { return asUpdate().getRid(); }
-
-    // ─── 計測結果アクセサ ───
 
     /** 最初の行が返されるまでの累積時間（ms） */
     public double getFirstRowTimeMs() {

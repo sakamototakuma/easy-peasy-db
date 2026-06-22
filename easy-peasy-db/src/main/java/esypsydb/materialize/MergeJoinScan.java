@@ -7,8 +7,6 @@ public class MergeJoinScan implements Scan {
     private SortScan s2;
     private String fldname1, fldname2;
     private Constant joinval = null;
-    private boolean hasmore1;
-    private boolean hasmore2;
 
     public MergeJoinScan(Scan s1, SortScan s2, String fldname1, String fldname2) {
         this.s1 = s1;
@@ -21,8 +19,6 @@ public class MergeJoinScan implements Scan {
     public void beforeFirst() {
         s1.beforeFirst();
         s2.beforeFirst();
-        hasmore1 = s1.next();
-        hasmore2 = s2.next();
         joinval = null;
     }
 
@@ -32,18 +28,19 @@ public class MergeJoinScan implements Scan {
     }
 
     /**
-     * もしRHS recordが同じjoin valueを持ってるなら
-     * 移動する
-     * そうじゃないなら
-     * もしLHS recordが同じjoin valueを持ってるなら
-     * RHSのスキャン位置を戻す
+     * Merge Join の前進
+     * 1. RHS(s2)を1つ進め まだ joinval と同じ値なら 同一グループの続きとして emit
+     * 2. そうでなければ LHS(s1)を1つ進め 新しい s1 が joinval と同じなら
+     *    RHS を保存位置へ巻き戻して同一グループを頭から再走査して emit
+     * 3. どちらでもなければ 値が一致するまで小さい側を進める
+     *    一致したら RHS 位置を保存 & joinval を更新して emit
      */
     public boolean next() {
-        if (hasmore2 && joinval != null && s2.getVal(fldname2).equals(joinval)) {
-            hasmore2 = s2.next();
+        boolean hasmore2 = s2.next();
+        if (hasmore2 && joinval != null && s2.getVal(fldname2).equals(joinval))
             return true;
-        }
 
+        boolean hasmore1 = s1.next();
         if (hasmore1 && joinval != null && s1.getVal(fldname1).equals(joinval)) {
             s2.restorePosition();
             hasmore2 = s2.next();
@@ -61,7 +58,6 @@ public class MergeJoinScan implements Scan {
             } else {
                 s2.savePosition();
                 joinval = s2.getVal(fldname2);
-                hasmore2 = s2.next();
                 return true;
             }
         }
