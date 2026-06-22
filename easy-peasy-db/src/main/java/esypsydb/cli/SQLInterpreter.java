@@ -162,6 +162,7 @@ public class SQLInterpreter {
                         batchCount = 0;
                     }
                     execute(planner, db, stmt);
+                    out.flush(); // batch では明示 flush（explain 等は print のみで autoflush されないため）
                 }
             }
         }

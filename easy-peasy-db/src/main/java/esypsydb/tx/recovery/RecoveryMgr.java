@@ -1,6 +1,7 @@
 package esypsydb.tx.recovery;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 import esypsydb.file.*;
 import esypsydb.buffer.Buffer;
@@ -12,6 +13,8 @@ import static esypsydb.tx.recovery.LogRecord.*;
 
 // リカバリマネージャ. 各TXが専用に1つ持つ
 public class RecoveryMgr {
+    private static final Logger logger = Logger.getLogger(RecoveryMgr.class.getName());
+
     private LogMgr lm;
     private BufferMgr bm;
     private Transaction tx;
@@ -113,7 +116,7 @@ public class RecoveryMgr {
             byte[] bytes = iter.next();
             LogRecord rec = LogRecord.createLogRecord(bytes);   // ログレコードの作成
             assert rec != null;
-            System.out.println(rec);
+            logger.fine(rec::toString);
             switch (rec.op()) {
                 case CHECKPOINT:
                     return;

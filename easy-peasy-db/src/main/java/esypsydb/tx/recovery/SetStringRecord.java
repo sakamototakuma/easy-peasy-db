@@ -41,7 +41,6 @@ public class SetStringRecord implements LogRecord {
     }
 
     public void undo(Transaction tx) {
-        System.out.println("undoing record");
         tx.pin(blk);
         tx.setString(blk, offset, val, false); // undoはログしない
         tx.unpin(blk);

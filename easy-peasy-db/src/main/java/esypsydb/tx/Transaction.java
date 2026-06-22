@@ -30,14 +30,12 @@ public class Transaction {
         recoveryMgr.commit();       // まずログでcommit
         concurMgr.release();        // ロック全解放
         mybuffers.unpinAll();       // 残ってるpin全て外す
-        System.out.println("transaction" + txnum + " completed");
     }
 
     public void rollback() {
         recoveryMgr.rollback();
         concurMgr.release();
         mybuffers.unpinAll();
-        System.out.println("transaction " + txnum + " rolled back");
     }
 
     public void recover() {
@@ -120,7 +118,6 @@ public class Transaction {
 
     public static synchronized int nextTxNumber() {
         nextTxNum++;
-        System.out.println("new transaction:" + nextTxNum);
         return nextTxNum;
     }
 }
