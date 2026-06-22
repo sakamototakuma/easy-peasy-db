@@ -5,12 +5,11 @@ public class StatInfo {
     private int numRecs;
    
    /**
-    * Create a StatInfo object.
-    * Note that the number of distinct values is not
-    * passed into the constructor.
-    * The object fakes this value.
-    * @param numblocks the number of blocks in the table
-    * @param numrecs the number of records in the table
+    * StatInfo オブジェクトを生成する
+    * - distinct 値数はコンストラクタで受け取らない
+    * - distinct 値はこのクラスが適当に偽装する
+    * @param numblocks テーブルのブロック数
+    * @param numrecs テーブルのレコード数
     */
    public StatInfo(int numblocks, int numrecs) {
       this.numBlocks = numblocks;
@@ -18,28 +17,27 @@ public class StatInfo {
    }
    
    /**
-    * Return the estimated number of blocks in the table.
-    * @return the estimated number of blocks in the table
+    * テーブルのブロック数の推定値を返す
+    * @return テーブルのブロック数の推定値
     */
    public int blocksAccessed() {
       return numBlocks;
    }
    
    /**
-    * Return the estimated number of records in the table.
-    * @return the estimated number of records in the table
+    * テーブルのレコード数の推定値を返す
+    * @return テーブルのレコード数の推定値
     */
    public int recordsOutput() {
       return numRecs;
    }
    
    /**
-    * Return the estimated number of distinct values
-    * for the specified field.
-    * This estimate is a complete guess, because doing something
-    * reasonable is beyond the scope of this system.
-    * @param fldname the name of the field
-    * @return a guess as to the number of distinct field values
+    * 指定フィールドの distinct 値数の推定値を返す
+    * - 完全な当て推量である
+    * - まともに算出する処理はこのシステムの対象外
+    * @param fldname
+    * @return distinct 値数の当て推量
     */
    public int distinctValues(String fldname) {
       return 1 + (numRecs / 3);

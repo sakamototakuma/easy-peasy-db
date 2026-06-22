@@ -3,8 +3,6 @@
 Java で実装している、教育用の Database Engine です。  
 JDBC クライアントから利用することを想定し、DBMS の内部実装をブラックボックスのまま扱うのではなく、ストレージ管理・インデックス・クエリ処理・トランザクション・復旧がどのように連携しているかを、実装しながら理解することを目的に開発しています。
 
-> **Status:** Work in Progress  
-
 ---
 
 ## Motivation
@@ -18,7 +16,7 @@ JDBC クライアントから利用することを想定し、DBMS の内部実�
 - トランザクションの整合性や同時実行制御はどう成立するのか
 - 障害時にどのように復旧するのか
 
-単に機能を再現することよりも、**責務分離と内部の相互作用を理解できる構成にすること**を重視しています。
+単に機能を再現することよりも、責務分離と内部の相互作用を理解できる構成にすることを重視しています。
 
 ---
 
@@ -97,11 +95,11 @@ Storage Manager / Buffer / Log / File
 
 ## Storage Model
 
-EasyPeasyDB は専用のブロックデバイスやカスタムファイルシステムを使わず、**ホスト OS のファイルシステム上のファイル**をそのままバッキングストアとして利用します。
+EasyPeasyDB は専用のブロックデバイスやカスタムファイルシステムを使わず、ホスト OS のファイルシステム上のファイルをそのままバッキングストアとして利用します。
 
 - DB ディレクトリ (接続 URL で指定) 配下に、テーブル毎に1つのファイルが作成されます
 - 各ファイルは `BLOCK_SIZE` バイトの固定長ブロックの配列として扱われます ([FileMgr.java](easy-peasy-db/src/main/java/esypsydb/file/FileMgr.java))
-- `RandomAccessFile` を `"rw"` モードで開き、**書き込みは OS のページキャッシュへ積む**形を取ります。fsync はコミット時のログ flush (`lm.flush`) のみで行い、実際の DB に近い WAL ベースの耐久性モデルを採用しています
+- `RandomAccessFile` を `"rw"` モードで開き、書き込みはOSのページキャッシュへ積む形を取ります。fsync はコミット時のログ flush (`lm.flush`) のみで行い、実際の DB に近い WAL ベースの耐久性モデルを採用しています
 - セッション終了時に `checkpoint()` を呼び、全 dirty バッファをフラッシュした上で CHECKPOINT レコードをログに書きます。次回起動時のリカバリはこの checkpoint まで遡るだけで完了します
 - 一時テーブル (`temp*`) は起動時に削除され、永続化対象外です
 
@@ -171,16 +169,6 @@ cd ..
 
 > **注意:** スクリプトを使わず素の `java -cp ...` で起動する場合、DB ディレクトリは JVM の CWD 配下に作られます。`easy-peasy-db/` から起動すると `easy-peasy-db/studentdb/` ができてしまうため `start-cli.sh` の利用を推奨。
 
-### 入力ルール
-
-- 文の終端は **`;`**。終端が見つかるまで複数行入力できます (継続プロンプト ` ... `)
-- 空行はスキップ
-- メタコマンド (`;` 不要):
-  - `help` または `?` … 使い方を表示
-  - `exit` または `quit` … 終了
-
-各文ごとに新しいトランザクションを開始し、エラー時は自動 rollback します。
-
 ### 対応している SQL
 
 | 種別 | 例 |
@@ -192,44 +180,6 @@ cd ..
 | Compare | `compare select id from t where id = 1;` |
 | IndexCmp | `indexcmp select id from t where id = 1;` |
 
-### サンプルデータ
-
-`samples/student/` のスキーマと生成スクリプトを使ってデータを投入できます。`data.sql` は `.gitignore` 対象（毎回ローカル生成）。
-
-最短手順は `bench_load.sh`：プロファイルを指定するとビルド・データ生成・ロードまで一気に行います。
-
-```bash
-./bench_load.sh                  # bench-medium / dbname=benchdb
-./bench_load.sh bench-small mybench
-./bench_load.sh bench-large hugebench
-```
-
-| profile | student | enroll | 用途 |
-|---|---:|---:|---|
-| `smoke` | 5K | 5K | 動作確認 |
-| `bench-small` | 50K | 100K | バッファプール内 |
-| **`bench-medium`** | **200K** | **500K** | **推奨**: プール超え |
-| `bench-large` | 500K | 2M | 本格ベンチ |
-
-手動で行いたい場合：
-
-```bash
-./start-cli.sh demo < samples/student/schema.sql
-python3 samples/student/gen_data.py --profile bench-medium    # または --students/--enrolls
-./start-cli.sh demo < samples/student/data.sql
-```
-
-#### データ量の見積もり
-
-スロットサイズは `4 (USED フラグ) + Σ field_bytes`.`int = 4`、`varchar(N) = 4 + N` (US-ASCII)。
-
-```
-records_per_block = floor(BLOCK_SIZE / slot_size)
-table_blocks      = ceil(N / records_per_block)
-table_bytes       = table_blocks × BLOCK_SIZE
-```
-
-`student` (slot=30B、136 rows/block) の例：200K 行 → 約 1471 block → **5.7 MiB**。バッファプール 4 MiB を超えるので I/O が発生し、index/multibuffer の挙動を観察できます。
 ---
 
 ## JDBC Notes (Current Implementation)
@@ -237,21 +187,8 @@ table_bytes       = table_blocks × BLOCK_SIZE
 現状コードに基づく接続 URL 仕様は次の通りです。
 
 - Embedded: `jdbc:esypsydb:<db-directory>`
-- Network: `jdbc:easypeasydb://<host>`（RMI レジストリはコード上で `1099` 固定）
+- Network: `jdbc:easypeasydb://<host>`（RMIレジストリはコード上 `1099` 固定）
 
----
-
-## Repository Structure
-
-```text
-easy-peasy-db/
-├── README.md
-└── easy-peasy-db/
-  ├── pom.xml
-  ├── src/main/java/esypsydb/
-  ├── src/test/java/
-  └── src/site/
-```
 ---
 
 ## License
