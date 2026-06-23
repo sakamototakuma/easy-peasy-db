@@ -64,12 +64,10 @@ public class Buffer {
         }
     }
 
-    // ピン数のインクリメント
     void pin() {
         pins++;
     }
 
-    //　ピン数のデクリメント
     void unpin() {
         pins--;
     }

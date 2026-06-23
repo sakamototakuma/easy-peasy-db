@@ -1,76 +1,21 @@
 # EasyPeasyDB
 
-Java で実装している、教育用の Database Engine です。  
+Java実装の教育用Database Engineです。  
 JDBC クライアントから利用することを想定し、DBMS の内部実装をブラックボックスのまま扱うのではなく、ストレージ管理・インデックス・クエリ処理・トランザクション・復旧がどのように連携しているかを、実装しながら理解することを目的に開発しています。
-
----
-
-## Motivation
-
-普段アプリケーション開発で利用する RDBMS は非常に高機能ですが、その分、内部で何が起きているかは見えにくくなりがちです。  
-このリポジトリでは、以下のような問いに実装ベースで向き合うことを目的にしています。
-
-- レコードはどのようにページへ配置されるのか
-- インデックスはどのように検索性能を支えるのか
-- SQL はどのように解釈され、実行計画に変換されるのか
-- トランザクションの整合性や同時実行制御はどう成立するのか
-- 障害時にどのように復旧するのか
-
-単に機能を再現することよりも、責務分離と内部の相互作用を理解できる構成にすることを重視しています。
 
 ---
 
 ## Current Features
 
-現時点では、主に以下の機能を実装・検証しています。
-
-- テーブル作成
-- `insert / select / update / delete`
-- `explain` 句（プラン木 + 実行時間の表示）
-- `compare` 句（HeuristicQueryPlanner と BasicQueryPlanner の実行計画・性能を並べて比較）
-- 対話的 SQL 実行 (`SQLInterpreter` REPL)
-- インデックス
-- B+Tree ベースのデータ構造
-- ページ管理
-- SQL パーサ
-- プランナ / 実行計画の生成
-- トランザクション
-- ロックベースの同時実行制御
-- WAL / ログ
-- 永続化
-- リカバリ
-- テスト
-- ベンチマーク
-  - クエリ性能
-  - 更新性能
-  - トランザクション遅延
-  - block accessed などの観点での計測
+- **SQL**: `create table` / `insert` / `select` / `update` / `delete`、`create index` / `create view`
+- **クエリ最適化**: Selinger / Heuristic / Basic の 3 プランナ、Index / Hash / Merge / MultiBuffer の各 Join
+- **解析ツール**: `explain [analyze]`（プラン木 + 推定/実測）、`compare`（プランナ横並び比較）、`indexcmp`（索引 ON/OFF 比較）
+- **インデックス**: B+Tree / Extendible Hash
+- **ストレージ/TX**: ページ・バッファ管理、WAL ログ、ロックベース同時実行制御、リカバリ、永続化
 
 ---
 
 ## Architecture Overview
-
-本実装は、DBMS の主要な責務をできるだけ分離して捉えられるように構成しています。
-
-```text
-SQL
- ↓
-Parser
- ↓
-Intermediate Representation (QueryData etc.)
- ↓
-Planner
- ↓
-Execution Plan
- ↓
-Execution / Scan / Update
- ↓
-Storage Manager / Buffer / Log / File
-```
-
-### Package Responsibilities
-
-`easy-peasy-db/src/main/java/esypsydb` 配下は、責務ごとに以下のように分かれています。
 
 | Package | Responsibility |
 |---|---|
@@ -83,128 +28,43 @@ Storage Manager / Buffer / Log / File
 | `plan` | 論理/物理プラン構築、実行計画生成 |
 | `query` | Scan 抽象、式/述語評価 |
 | `metadata` | テーブル・統計・インデックスメタデータ |
-| `index` | インデックス機能（B+Tree/Hash など） |
-| `materialize` | 一時テーブル等の中間結果管理 |
-| `multibuffer` | chunk 分割、バッファを有効活用 |
-| `opt` | クエリ最適化、Heuristic による join order・Index 選択 |
-| `jdbc` | Embedded / Network 経由の JDBC インターフェース |
-| `server` | DB 初期化・起動エントリポイント |
-| `cli` | 対話的 SQL シェル (`SQLInterpreter`) |
+| `index` | インデックス（B+Tree / Hash） |
+| `materialize` | ソート・一時テーブル等の中間結果 |
+| `multibuffer` | chunk 分割によるバッファ活用 |
+| `opt` | クエリ最適化（join order / index 選択） |
+| `jdbc` | Embedded / Network 経由の JDBC |
+| `server` / `cli` | DB 起動エントリ / 対話シェル |
 
 ---
 
 ## Storage Model
 
-EasyPeasyDB は専用のブロックデバイスやカスタムファイルシステムを使わず、ホスト OS のファイルシステム上のファイルをそのままバッキングストアとして利用します。
-
-- DB ディレクトリ (接続 URL で指定) 配下に、テーブル毎に1つのファイルが作成されます
-- 各ファイルは `BLOCK_SIZE` バイトの固定長ブロックの配列として扱われます ([FileMgr.java](easy-peasy-db/src/main/java/esypsydb/file/FileMgr.java))
-- `RandomAccessFile` を `"rw"` モードで開き、書き込みはOSのページキャッシュへ積む形を取ります。fsync はコミット時のログ flush (`lm.flush`) のみで行い、実際の DB に近い WAL ベースの耐久性モデルを採用しています
-- セッション終了時に `checkpoint()` を呼び、全 dirty バッファをフラッシュした上で CHECKPOINT レコードをログに書きます。次回起動時のリカバリはこの checkpoint まで遡るだけで完了します
-- 一時テーブル (`temp*`) は起動時に削除され、永続化対象外です
-
-したがって I/O 性能は、動作しているマシンのディスク (SSD / HDD) 特性とファイルシステムに直接依存します。
+- ホスト OS のファイルをバッキングストアに使用。テーブル毎に 1 ファイルで、各ファイルは `BLOCK_SIZE` の固定長ブロック配列（[FileMgr.java](easy-peasy-db/src/main/java/esypsydb/file/FileMgr.java)）。
+- WAL ベースの耐久性: fsync はコミット時のログ flush のみ。セッション終了時に `checkpoint()` で dirty バッファをフラッシュし CHECKPOINT を記録 → 次回リカバリは checkpoint まで遡るだけで完了。
+- 一時テーブル（`temp*`）は起動時に削除され、永続化対象外。
 
 ---
 
-## Configuration & Memory Footprint
+## Configuration
 
 | Parameter | Default | 意味 |
 |---|---|---|
-| `BLOCK_SIZE` | `4096` | 1ブロックのバイト数 (4 KiB) OS のページサイズ・FS ブロックサイズに揃えることで I/O を効率化 |
-| `BUFFER_SIZE` | `1024` | バッファプールに常駐させるページ数 |
+| `BLOCK_SIZE` | `4096` | 1 ブロック = 4 KiB |
+| `BUFFER_SIZE` | `1024` | バッファプールのページ数（計 4 MiB） |
 | `LOG_FILE` | `easypeasydb.log` | WAL ログファイル名 |
 
-### Memory
-
-- バッファプール使用量 = `BLOCK_SIZE × BUFFER_SIZE` = 4 KiB × 1024 = 4 MiB
-- ページは `ByteBuffer.allocateDirect()` で確保されるため、JVM ヒープ外のダイレクトメモリ領域に載ります ([Page.java](easy-peasy-db/src/main/java/esypsydb/file/Page.java))
-- 上記に加え、ログバッファ・トランザクション状態・メタデータ等で追加の JVM ヒープを使用します
+ページは `ByteBuffer.allocateDirect()` で確保され、JVM ヒープ外のダイレクトメモリに載ります（[Page.java](easy-peasy-db/src/main/java/esypsydb/file/Page.java)）。
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- JDK 21
-- Maven 3.9+
-
-> `pom.xml` の `maven-compiler-plugin` は `source/target = 21` .
-
-### Build & Test
-
-```bash
-cd easy-peasy-db
-mvn test
-```
-
-### Site Documentation (optional)
-
-```bash
-cd easy-peasy-db
-mvn site
-```
-
----
-
-## SQL Interpreter (REPL)
-
-対話的にSQLを実行するためのREPLを `esypsydb.cli.SQLInterpreter` として提供しています。[JLine3](https://github.com/jline/jline3) を使用しており、矢印キーでのカーソル移動・履歴操作（`~/.easypeasydb_history`）・SQL キーワードのシンタックスハイライトに対応しています。
-
-### Quick Start
-
-```bash
-# 1. ビルド (初回 / コード変更時)
-cd easy-peasy-db
-mvn -q compile
-cd ..
-
-# 2. 起動 (リポジトリルートから)
-./start-cli.sh                # studentdb を使用
-./start-cli.sh mydb           # 任意の DB ディレクトリ名を指定可能
-```
-
-`start-cli.sh` は CWD をリポジトリルートに固定するため、DB ディレクトリは常に `<repo-root>/<dbname>/` に作られます。指定したディレクトリが存在しなければ新規作成、存在すればリカバリして開きます。
-
-> **注意:** スクリプトを使わず素の `java -cp ...` で起動する場合、DB ディレクトリは JVM の CWD 配下に作られます。`easy-peasy-db/` から起動すると `easy-peasy-db/studentdb/` ができてしまうため `start-cli.sh` の利用を推奨。
-
-### 対応している SQL
-
-| 種別 | 例 |
-|---|---|
-| DDL | `create table t(id int, name varchar(10));`<br>`create index idx_id on t(id);`<br>`create view v as select id from t;` |
-| DML | `insert into t(id, name) values(1, 'foo');`<br>`update t set name = 'bar' where id = 1;`<br>`delete from t where id = 1;` |
-| Query | `select id, name from t where id = 1;` |
-| Explain | `explain select id from t where id = 1;` |
-| Compare | `compare select id from t where id = 1;` |
-| IndexCmp | `indexcmp select id from t where id = 1;` |
-
----
-
-## JDBC Notes (Current Implementation)
-
-現状コードに基づく接続 URL 仕様は次の通りです。
+## JDBC Notes
 
 - Embedded: `jdbc:esypsydb:<db-directory>`
-- Network: `jdbc:easypeasydb://<host>`（RMIレジストリはコード上 `1099` 固定）
+- Network: `jdbc:easypeasydb://<host>`（RMI レジストリは `1099` 固定）
 
 ---
 
-## License
+## License / Acknowledgements
 
-MIT License. See [LICENSE](LICENSE).
-
----
-
-## Acknowledgements
-
-本プロジェクトは、Edward Sciore 著 *Database Design and Implementation* から着想を得ています。  
-This repository is an independent educational implementation and is not affiliated with the author or publisher.
-
----
-
-## Notes
-
-- API や内部構造は、学習価値を高めるために今後も変更される可能性があります。
-- 実験・検証用途での利用を前提としており、本番運用向けの保証は行っていません。
+MIT License（[LICENSE](LICENSE)）。
+Edward Sciore 著 *Database Design and Implementation* から着想を得た独立した教育用実装で、著者・出版社とは無関係です。学習目的の実装であり、本番運用向けの保証はありません。

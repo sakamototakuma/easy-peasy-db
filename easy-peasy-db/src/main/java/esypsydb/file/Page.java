@@ -26,12 +26,10 @@ public class Page {
     }
 
     // 固定位置にint nを読み書き
-    // 指定位置の値をget
     public int getInt(int offset) {
         return bb.getInt(offset);
     }
 
-    //　指定位置に値nをset
     public void setInt(int offset, int n) {
         bb.putInt(offset, n);
     }
@@ -76,7 +74,7 @@ public class Page {
         return Integer.BYTES + (strlen * (int)bytesPerChar);
     }
 
-    // FilrMgrで必要な静的メソッドのpackage
+    // FileMgrで必要な静的メソッドのpackage
     ByteBuffer contents() {
         // バッファのポインタリセット
         bb.position(0);

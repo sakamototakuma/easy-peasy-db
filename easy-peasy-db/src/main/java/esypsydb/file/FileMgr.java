@@ -8,7 +8,7 @@ import java.util.Map;
 // 
 public class FileMgr {
     private File dbDirectory; // 保存先ディレクトリ
-    private int blocksize; // ブロックサイズ
+    private int blocksize;
     private boolean isNew;
     private Map<String, RandomAccessFile> openFiles = new java.util.LinkedHashMap<String, RandomAccessFile>(16, 0.75f,
             true) {

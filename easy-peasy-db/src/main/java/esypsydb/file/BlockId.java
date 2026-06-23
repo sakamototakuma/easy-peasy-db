@@ -36,7 +36,6 @@ public class BlockId {
         return filename.equals(blk.filename) && blknum == blk.blknum;
     }
 
-    // デバッグ用の文字列を返す
     public String toString() {
         return "[file" + filename + ", block" + blknum + "]";
     }
