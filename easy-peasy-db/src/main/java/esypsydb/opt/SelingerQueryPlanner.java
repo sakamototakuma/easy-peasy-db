@@ -31,8 +31,6 @@ public class SelingerQueryPlanner implements QueryPlanner {
         List<String> tables = new ArrayList<>(data.tables());
         int n = tables.size();
         Predicate pred = data.pred();
-
-        // TablePlanner を使ってインデックス選択 + selection pushdown
         TablePlanner[] tps = new TablePlanner[n];
         Plan[] access = new Plan[n];
         for (int i = 0; i < n; i++) {
@@ -45,25 +43,23 @@ public class SelingerQueryPlanner implements QueryPlanner {
         // mask はビットマスク（bit i = tables[i]）
         Map<Integer, Plan> lowest = new HashMap<>();
 
-        // Base case: 単一テーブル
+        // 単一テーブル
         for (int i = 0; i < n; i++)
             lowest.put(1 << i, access[i]);
 
-        // size=2 から n まで、部分集合を拡大
+        // size=2->nで部分集合を拡大
         for (int size = 2; size <= n; size++) {
             for (int mask = 1; mask < (1 << n); mask++) {
                 if (Integer.bitCount(mask) != size)
                     continue;
-
                 Plan best = null;
 
-                // mask から各テーブル t を 1 つ取り除き、
+                // maskから各テーブルtを1つ取り除き、
                 // lowest[rest] と t の結合を試す（left-deep）
                 for (int i = 0; i < n; i++) {
                     int bit = 1 << i;
                     if ((mask & bit) == 0)
                         continue;
-
                     int rest = mask ^ bit;
                     Plan left = lowest.get(rest);
                     if (left == null)
@@ -83,21 +79,22 @@ public class SelingerQueryPlanner implements QueryPlanner {
         return new ProjectPlan(lowest.get(allMask), data.fields());
     }
 
+    // 最適なjoinのコストベース比較
     private Plan bestJoin(Plan left, TablePlanner tp, Predicate pred, Transaction tx) {
         Plan best;
 
-        // ベースライン: Product Join
+        // Product Join
         best = tp.makeProductPlan(left);
         Predicate joinPred = pred.joinSubPred(left.schema(), tp.makeSelectPlan().schema());
         if (joinPred != null)
             best = new SelectPlan(best, joinPred);
 
-        // 候補 1: Index Join（TablePlanner に委譲）
+        // Index Join
         Plan indexJoin = tp.makeJoiPlan(left);
         if (indexJoin != null && indexJoin.blocksAccessed() < best.blocksAccessed())
             best = indexJoin;
 
-        // 候補 2: Merge Join（等結合述語がある場合）
+        // Merge Join（等結合述語がある場合）
         Plan mergeJoin = tryMergeJoin(left, tp.makeSelectPlan(), pred, tx);
         if (mergeJoin != null && mergeJoin.blocksAccessed() < best.blocksAccessed())
             best = mergeJoin;
@@ -109,7 +106,6 @@ public class SelingerQueryPlanner implements QueryPlanner {
         Schema leftSch = left.schema();
         Schema rightSch = right.schema();
 
-        // 右テーブルの各フィールドに対して、左側と等結合になる列を探す
         for (String rightFld : rightSch.fields()) {
             String leftFld = pred.equatesWithField(rightFld);
             if (leftFld != null && leftSch.hasField(leftFld)) {
