@@ -61,13 +61,26 @@ public class TablePlanner {
 
         if (joinpred == null)
             return null;
-        // HashJoin を優先: 統計モデルが外側行数を過小評価するため
-        // IndexJoin の「外側×ランダム検索」コストが不正確になる。
-        Plan p = makeHashJoin(current, currsch);
-        if (p == null)
-            p = makeIndexJoin(current, currsch);
-        if (p == null)
+        Plan hashPlan  = makeHashJoin(current, currsch);
+        Plan indexPlan = makeIndexJoin(current, currsch);
+
+        Plan p;
+        if (hashPlan != null && indexPlan != null) {
+            // 両側が大きい (blocksAccessed > 20) → HashJoin (逐次 I/O が有利)
+            // 外側が小さい → IndexJoin (少ない random lookupで済む)
+            // recordsOutput() は統計推定が不正確なため blocksAccessed() で判定する
+            // 20 は暫定値で実測の根拠はない（4KB ブロックで約 80KB）。
+            // 本来は両 Plan のコスト比較だが、外側行数の統計が不正確なため据え置く
+            boolean outerLarge = current.blocksAccessed() > 20;
+            boolean innerLarge = myplan.blocksAccessed()  > 20;
+            p = (outerLarge && innerLarge) ? hashPlan : indexPlan;
+        } else if (hashPlan != null) {
+            p = hashPlan;
+        } else if (indexPlan != null) {
+            p = indexPlan;
+        } else {
             p = makeProductJoin(current, currsch);
+        }
         return p;
     }
 
