@@ -69,6 +69,10 @@ public class IndexInfo {
       return fldname;
    }
 
+   public boolean isHash() {
+      return HASH.equals(idxtype);
+   }
+
    public String indexType() {
       return BTREE.equals(idxtype) ? BTreeIndex.class.getSimpleName()
                                    : HashIndex.class.getSimpleName();

@@ -27,15 +27,16 @@ public class IndexUpdatePlanner implements UpdatePlanner {
         s.insert();
         RID rid = s.getRid();
         
-        // then modify each field, inserting an index record if appropriate
-        Map<String,IndexInfo> indexes = mdm.getIndexInfo(tblname, tx);
+        // then modify each field, inserting an index record into every index on that field
+        List<IndexInfo> indexes = mdm.getAllIndexInfo(tblname, tx);
         Iterator<Constant> valIter = data.vals().iterator();
         for (String fldname : data.fields()) {
             Constant val = valIter.next();
             s.setVal(fldname, val);
-            
-            IndexInfo ii = indexes.get(fldname);
-            if (ii != null) {
+
+            for (IndexInfo ii : indexes) {
+                if (!ii.fieldName().equals(fldname))
+                    continue;
                 Index idx = ii.open();
                 idx.insert(val, rid);
                 idx.close();
@@ -49,16 +50,16 @@ public class IndexUpdatePlanner implements UpdatePlanner {
         String tblname = data.tableName();
         Plan p = new TablePlan(tx, tblname, mdm);
         p = new SelectPlan(p, data.pred());
-        Map<String,IndexInfo> indexes = mdm.getIndexInfo(tblname, tx);
-        
+        List<IndexInfo> indexes = mdm.getAllIndexInfo(tblname, tx);
+
         UpdateScan s = (UpdateScan) p.open();
         int count = 0;
         while(s.next()) {
             // first, delete the record's RID from every index
             RID rid = s.getRid();
-            for (String fldname : indexes.keySet()) {
-                Constant val = s.getVal(fldname);
-                Index idx = indexes.get(fldname).open();
+            for (IndexInfo ii : indexes) {
+                Constant val = s.getVal(ii.fieldName());
+                Index idx = ii.open();
                 idx.delete(val, rid);
                 idx.close();
             }
@@ -76,9 +77,12 @@ public class IndexUpdatePlanner implements UpdatePlanner {
         Plan p = new TablePlan(tx, tblname, mdm);
         p = new SelectPlan(p, data.pred());
         
-        IndexInfo ii = mdm.getIndexInfo(tblname, tx).get(fldname);
-        Index idx = (ii == null) ? null : ii.open();
-        
+        // 対象フィールドの index はすべて更新する（同一フィールドに複数ありうる）
+        List<Index> idxs = new ArrayList<Index>();
+        for (IndexInfo ii : mdm.getAllIndexInfo(tblname, tx))
+            if (ii.fieldName().equals(fldname))
+                idxs.add(ii.open());
+
         UpdateScan s = (UpdateScan) p.open();
         int count = 0;
         while(s.next()) {
@@ -86,16 +90,17 @@ public class IndexUpdatePlanner implements UpdatePlanner {
             Constant newval = data.newValue().evaluate(s);
             Constant oldval = s.getVal(fldname);
             s.setVal(data.targetField(), newval);
-            
-            // then update the appropriate index, if it exists
-            if (idx != null) {
-                RID rid = s.getRid();
+
+            // then update every index on that field
+            RID rid = s.getRid();
+            for (Index idx : idxs) {
                 idx.delete(oldval, rid);
                 idx.insert(newval, rid);
             }
             count++;
         }
-        if (idx != null) idx.close();
+        for (Index idx : idxs)
+            idx.close();
         s.close();
         return count;
     }
@@ -111,7 +116,24 @@ public class IndexUpdatePlanner implements UpdatePlanner {
     }
     
     public int executeCreateIndex(CreateIndexData data, Transaction tx) {
-        mdm.createIndex(data.indexName(), data.tableName(), data.fieldName(), data.indexType(), tx);
+        String tblname = data.tableName();
+        String fldname = data.fieldName();
+        // 存在しない表・列には作らない（カタログに行を足す前に弾く）
+        if (!mdm.getLayout(tblname, tx).schema().hasField(fldname))
+            throw new IllegalArgumentException("no such field: " + tblname + "." + fldname);
+        mdm.createIndex(data.indexName(), tblname, fldname, data.indexType(), tx);
+
+        // 既存の行を新しい index に入れる（backfill）
+        for (IndexInfo ii : mdm.getAllIndexInfo(tblname, tx)) {
+            if (!ii.indexName().equals(data.indexName()))
+                continue;
+            UpdateScan s = (UpdateScan) new TablePlan(tx, tblname, mdm).open();
+            Index idx = ii.open();
+            while (s.next())
+                idx.insert(s.getVal(fldname), s.getRid());
+            idx.close();
+            s.close();
+        }
         return 0;
     }
 }

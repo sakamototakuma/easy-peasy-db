@@ -1,7 +1,7 @@
 package esypsydb.index;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import esypsydb.metadata.IndexInfo;
 import esypsydb.metadata.MetadataMgr;
@@ -21,13 +21,11 @@ public class IndexUpdateTest {
       Plan studentplan = new TablePlan(tx, "student", mdm);
       UpdateScan studentscan = (UpdateScan) studentplan.open();
 
-      // Create a map containing all indexes for STUDENT.
-      Map<String,Index> indexes = new HashMap<>();
-      Map<String,IndexInfo> idxinfo = mdm.getIndexInfo("student", tx);
-      for (String fldname : idxinfo.keySet()) {
-         Index idx = idxinfo.get(fldname).open();
-         indexes.put(fldname, idx);
-      }
+      // Open every index for STUDENT (a field may have several).
+      List<IndexInfo> infos = mdm.getAllIndexInfo("student", tx);
+      List<Index> indexes = new ArrayList<>();
+      for (IndexInfo ii : infos)
+         indexes.add(ii.open());
 
       // Task 1: insert a new STUDENT record for Sam
       //    First, insert the record into STUDENT.
@@ -39,10 +37,9 @@ public class IndexUpdateTest {
 
       //    Then insert a record into each of the indexes.
       RID datarid = studentscan.getRid();
-      for (String fldname : indexes.keySet()) {
-         Constant dataval = studentscan.getVal(fldname);
-         Index idx = indexes.get(fldname);
-         idx.insert(dataval, datarid);
+      for (int i = 0; i < infos.size(); i++) {
+         Constant dataval = studentscan.getVal(infos.get(i).fieldName());
+         indexes.get(i).insert(dataval, datarid);
       }
 
       // Task 2: find and delete Joe's record
@@ -52,10 +49,9 @@ public class IndexUpdateTest {
 
             // First, delete the index records for Joe.
             RID joeRid = studentscan.getRid();
-            for (String fldname : indexes.keySet()) {
-               Constant dataval = studentscan.getVal(fldname);
-               Index idx = indexes.get(fldname);
-               idx.delete(dataval, joeRid);
+            for (int i = 0; i < infos.size(); i++) {
+               Constant dataval = studentscan.getVal(infos.get(i).fieldName());
+               indexes.get(i).delete(dataval, joeRid);
             }
 
             // Then delete Joe's record in STUDENT.
@@ -71,7 +67,7 @@ public class IndexUpdateTest {
       }
       studentscan.close();
       
-      for (Index idx : indexes.values())
+      for (Index idx : indexes)
          idx.close();
       tx.commit();
    }
