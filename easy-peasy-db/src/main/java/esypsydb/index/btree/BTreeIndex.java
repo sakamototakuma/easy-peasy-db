@@ -120,11 +120,16 @@ public class BTreeIndex implements Index {
    /**
     * 特定検索キーの探索に必要なブロックアクセス数を見積もる
     * 計算式: 1 + log_{rpb}(numblocks)
+    * numblocks が 1 以下なら下限の 1、rpb が 1 以下（log が 0 になる）なら numblocks を返す
     * @param numblocks B-tree ディレクトリのブロック数
     * @param rpb 1ブロック当たりのエントリ数
     * @return 推定探索コスト
     */
    public static int searchCost(int numblocks, int rpb) {
+      if (numblocks <= 1)
+         return 1;
+      if (rpb <= 1)
+         return numblocks;
       return 1 + (int)(Math.log(numblocks) / Math.log(rpb));
    }
 }

@@ -74,7 +74,7 @@ public class BTPage {
     // 新しいブロックをフォーマットする
     public void format(BlockId blk, int flag) {
         tx.setInt(blk, 0, flag, false);
-        tx.setInt(blk, Integer.BYTES, flag, false);
+        tx.setInt(blk, Integer.BYTES, 0, false);
         int recsize = layout.slotSize();
         for (int pos=2*Integer.BYTES; pos+recsize<=tx.blockSize();
                                       pos += recsize)
@@ -103,7 +103,7 @@ public class BTPage {
     public void insertDir(int slot, Constant val, int blknum) {
         insert(slot);
         setVal(slot, "dataval", val);
-        setInt(slot, "null", blknum);
+        setInt(slot, "block", blknum);
     }
 
     // Methods called only by BTreeLeaf
