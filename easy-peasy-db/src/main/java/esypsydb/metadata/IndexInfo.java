@@ -3,6 +3,7 @@ package esypsydb.metadata;
 import static java.sql.Types.INTEGER;
 
 import esypsydb.index.Index;
+import esypsydb.index.btree.BTreeIndex;
 import esypsydb.index.hash.HashIndex;
 import esypsydb.record.*;
 import esypsydb.tx.Transaction;
@@ -14,24 +15,36 @@ import esypsydb.tx.Transaction;
  * メソッドは基本的に Plan のメソッドと同様である。
  */
 public class IndexInfo {
-    private String idxname, fldname;
+    /** idxcat の indextype に保存する値（CREATE INDEX ... USING の指定と同じ小文字） */
+    public static final String HASH = "hash";
+    public static final String BTREE = "btree";
+
+    private String idxname, fldname, idxtype;
     private Transaction tx;
     private Schema tblSchema;
     private Layout idxLayout;
     private StatInfo si;
 
+    public static boolean isKnownType(String idxtype) {
+      return HASH.equals(idxtype) || BTREE.equals(idxtype);
+    }
+
     /**
      * 指定されたインデックスの IndexInfo オブジェクトを生成する。
      * @param idxname インデックスの名前
      * @param fldname インデックス対象フィールドの名前
+     * @param idxtype インデックスの種別（HASH または BTREE）
      * @param tblSchema テーブルのスキーマ
      * @param tx 呼び出し元のトランザクション
      * @param si テーブルの統計情報
      */
-    public IndexInfo(String idxname, String fldname, Schema tblSchema,
+    public IndexInfo(String idxname, String fldname, String idxtype, Schema tblSchema,
                     Transaction tx,  StatInfo si) {
+      if (!isKnownType(idxtype))
+         throw new IllegalArgumentException("unknown index type: " + idxtype);
       this.idxname = idxname;
       this.fldname = fldname;
+      this.idxtype = idxtype;
       this.tx = tx;
       this.tblSchema = tblSchema;
       this.idxLayout = createIdxLayout();
@@ -43,8 +56,9 @@ public class IndexInfo {
     * @return このインデックス情報に対応する Index オブジェクト
     */
     public Index open() {
+      if (BTREE.equals(idxtype))
+         return new BTreeIndex(tx, idxname, idxLayout);
       return new HashIndex(tx, idxname, idxLayout);
-    // return new BTreeIndex(tx, idxname, idxLayout);
    }
 
    public String indexName() {
@@ -56,7 +70,8 @@ public class IndexInfo {
    }
 
    public String indexType() {
-      return HashIndex.class.getSimpleName();
+      return BTREE.equals(idxtype) ? BTreeIndex.class.getSimpleName()
+                                   : HashIndex.class.getSimpleName();
    }
 
    /**
@@ -70,8 +85,9 @@ public class IndexInfo {
    public int blocksAccessed() {
       int rpb = tx.blockSize() / idxLayout.slotSize();
       int numblocks = si.recordsOutput() / rpb;
+      if (BTREE.equals(idxtype))
+         return BTreeIndex.searchCost(numblocks, rpb);
       return HashIndex.searchCost(numblocks, rpb);
-    // return BTreeIndex.searchCost(numblocks, rpb);
    }
 
    /**

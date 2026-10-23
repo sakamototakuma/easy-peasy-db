@@ -1,5 +1,6 @@
 package esypsydb.parse;
 
+import esypsydb.metadata.IndexInfo;
 import esypsydb.query.*;
 import esypsydb.record.*;
 import java.util.*;
@@ -251,6 +252,14 @@ public class Parser {
         lex.eatDelim('(');
         String fldname = field();
         lex.eatDelim(')');
-        return new CreateIndexData(idxname, tblname, fldname);
+        // USING を省略したときは従来どおり Hash
+        String idxtype = IndexInfo.HASH;
+        if (lex.matchKeyword("using")) {
+            lex.eatKeyword("using");
+            idxtype = lex.eatId();
+            if (!IndexInfo.isKnownType(idxtype))
+                throw new BadSyntaxException();
+        }
+        return new CreateIndexData(idxname, tblname, fldname, idxtype);
     }
 }

@@ -33,8 +33,13 @@ public class MetadataMgr {
         return viewmgr.getViewDef(viewname, tx);
     }
 
+    // 種別を省略した呼び出しは Hash（従来どおり）
     public void createIndex(String idxname, String tblname, String fldname, Transaction tx) {
-        idxmgr.createIndex(idxname, tblname, fldname, tx);
+        createIndex(idxname, tblname, fldname, IndexInfo.HASH, tx);
+    }
+
+    public void createIndex(String idxname, String tblname, String fldname, String indextype, Transaction tx) {
+        idxmgr.createIndex(idxname, tblname, fldname, indextype, tx);
     }
 
     public Map<String, IndexInfo> getIndexInfo(String tblname, Transaction tx) {
