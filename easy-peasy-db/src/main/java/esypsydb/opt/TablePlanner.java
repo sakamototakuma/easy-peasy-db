@@ -10,10 +10,16 @@ import esypsydb.metadata.MetadataMgr;
 import esypsydb.multibuffer.MultiBufferProductPlan;
 import esypsydb.plan.*;
 import java.util.Map;
+import java.util.TreeSet;
 
 
 
 public class TablePlanner {
+    // seq scan と index scan の比較に使うブロックの重み。PostgreSQL の既定値
+    // (seq_page_cost=1.0, random_page_cost=4.0) の流用で、このエンジンでの実測はない。意味があるのは比だけ
+    private static final double W_SEQ = 1.0;
+    private static final double W_RANDOM = 4.0;
+
     private TablePlan myplan;
     private Predicate mypred;
     private Schema myschema;
@@ -95,16 +101,44 @@ public class TablePlanner {
         return new MultiBufferProductPlan(current, p, tx);
     }
 
+    // 等値条件に合う index のうち最安のものを選び、seq scan より安いときだけ Index Select にする
     private Plan makeIndexSelect() {
         if (!useIndex) return null;
-        for (String fldname : indexes.keySet()) {
+        IndexInfo best = null;
+        Constant bestval = null;
+        double bestcost = 0;
+        // フィールド名順に見る（同コストなら先に見たもの。HashMap の順に依らないようにする）
+        for (String fldname : new TreeSet<>(indexes.keySet())) {
             Constant val = mypred.equatesWithConstant(fldname);
-            if (val != null) {
-                IndexInfo ii = indexes.get(fldname);
-                return new IndexSelectPlan(myplan, ii, val);
+            if (val == null)
+                continue;
+            IndexInfo ii = indexes.get(fldname);
+            double cost = indexCost(ii.blocksAccessed(), ii.recordsOutput());
+            if (best == null || cost < bestcost) {
+                best = ii;
+                bestval = val;
+                bestcost = cost;
             }
         }
-        return null;
+        if (best == null)
+            return null;
+        if (!preferIndex(myplan.blocksAccessed(), best.blocksAccessed(), best.recordsOutput()))
+            return null;
+        return new IndexSelectPlan(myplan, best, bestval);
+    }
+
+    // index scan の推定コスト。index ページは逐次、親表の行取得はランダムとみなす。
+    // index ページは最低 1 ブロック読むので下限 1（Hash の searchCost は小さい表で 0 になる）
+    static double indexCost(int idxBlocks, int rows) {
+        return W_SEQ * Math.max(1, idxBlocks) + W_RANDOM * rows;
+    }
+
+    // index scan が seq scan 以下のコストなら true（同点は index）
+    // seqBlocks が 0 以下（統計が空）のときは比較せず true（従来どおり index を使う）
+    static boolean preferIndex(int seqBlocks, int idxBlocks, int rows) {
+        if (seqBlocks <= 0)
+            return true;
+        return indexCost(idxBlocks, rows) <= W_SEQ * seqBlocks;
     }
 
     /**
