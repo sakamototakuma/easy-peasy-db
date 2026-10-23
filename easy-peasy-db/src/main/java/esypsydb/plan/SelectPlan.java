@@ -17,6 +17,9 @@ public class SelectPlan implements Plan {
     @Override
     public Scan open() {
         Scan s = p.open();
+        // 下位が更新可能なら DELETE / UPDATE の WHERE でも使えるように SelectUpdateScan にする
+        if (s instanceof UpdateScan)
+            return new SelectUpdateScan((UpdateScan) s, pred);
         return new SelectScan(s, pred);
     }
 
